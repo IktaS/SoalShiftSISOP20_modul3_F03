@@ -239,7 +239,7 @@ void forkAndKillAll(){
         exit(EXIT_FAILURE);
     }
     if(child_id == 0){
-        char *argv[] = {"killall","soal2_pokezone","soal2_traizone",NULL};
+        char *argv[] = {"killall","soal1_pokezone","soal1_traizone",NULL};
         execv("/usr/bin/killall",argv);
     }else{
         return;
