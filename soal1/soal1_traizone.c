@@ -46,11 +46,14 @@ typedef struct scene{
     pokemon * capturedmode_pokemon;
 
     int pokedollar;
+
+    pthread_mutex_t pokedex_lock;
     pokemon pokedex[10];
     int sizepokedex;
 
     pthread_mutex_t lull_lock;
     int lullaby_state;
+    int deact_lull;
 }pokezone_scene;
 
 typedef struct pokedexpoke{
@@ -76,20 +79,23 @@ void render_mainmenu(pokezone_scene * curscene){
 
 void render_capturemode(pokezone_scene * curscene){
     if(curscene->capturedmode_pokemon != NULL)
-        printf("Kamu bertemu dengan %s\n",curscene->capturedmode_pokemon->name);
+        printf("Kamu bertemu dengan %s  --- %d\n",curscene->capturedmode_pokemon->name,curscene->capturedmode_pokemon->capture + 20 * (curscene->lullaby_state));
+    if(curscene->lullaby_state != 0)
+        printf("Lullaby aktif\n");
     printf("Pilih aksi :\n");
     printf("1. Tangkap\n");
     printf("2. Use Lullaby Powder\n");
     printf("3. To Mainmenu\n");
     int rando = rand()%100;
     if(rando < curscene->capturedmode_pokemon->escape && curscene->lullaby_state != 1){
-        // pthread_mutex_lock(&(curscene->state_lock));
+        pthread_mutex_lock(&(curscene->state_lock));
         *(curscene->state_menu) = 0;
         pthread_mutex_unlock(&(curscene->state_lock));
         *(curscene->state_cari) = 0;
         pthread_mutex_lock(&(curscene->lull_lock));
         curscene->lullaby_state = 0;
         pthread_mutex_unlock(&(curscene->lull_lock));
+        curscene->deact_lull = 1;
     }
 }
 
@@ -118,7 +124,7 @@ void render_lepas(pokezone_scene * curscene){
         printf("%d. %s - %d\n",i+1,curscene->pokedex[i].name,curscene->pokedex[i].pokedollar);
     }
     printf("\n");
-    printf("Pilih nomor lepas : ");
+    printf("Pilih nomor lepas : \n");
 }
 
 void render_goto(pokezone_scene * curscene){
@@ -134,9 +140,9 @@ void * cari_pokemon(void* args){
         int rando = rand()%10;
         if(rando < 6){
             memcpy(passed_scene->capturedmode_pokemon,passed_scene->available_pokemon,sizeof(pokemon));
-            // pthread_mutex_lock(&(passed_scene->state_lock));
+            pthread_mutex_lock(&(passed_scene->state_lock));
             *(passed_scene->state_menu) = 5;
-            // pthread_mutex_unlock(&(passed_scene->state_lock));
+            pthread_mutex_unlock(&(passed_scene->state_lock));
             *(passed_scene->state_cari) = 0;
             break;
         }
@@ -161,51 +167,53 @@ void input_mainmenu(pokezone_scene * curscene, int input){
     case 1:
         // printf("1. Berhenti mencari\n");
         if(*(curscene->state_cari) == 0) {
-            // pthread_mutex_lock(&(curscene->state_lock));
+            pthread_mutex_lock(&(curscene->state_lock));
             *(curscene->state_cari) = 1;
-            // pthread_mutex_unlock(&(curscene->state_lock));
+            pthread_mutex_unlock(&(curscene->state_lock));
             start_cari_pokemon(curscene);
             break;
         }
         if(*(curscene->state_cari) == 1){
-            // pthread_mutex_lock(&(curscene->state_lock));
+            pthread_mutex_lock(&(curscene->state_lock));
             *(curscene->state_cari) = 0;
-            // pthread_mutex_unlock(&(curscene->state_lock));
+            pthread_mutex_unlock(&(curscene->state_lock));
             break;
         }
         break;
     case 2:
-        // pthread_mutex_lock(&(curscene->state_lock));
+        pthread_mutex_lock(&(curscene->state_lock));
         *(curscene->state_menu) = 2;
-        // pthread_mutex_unlock(&(curscene->state_lock));
+        pthread_mutex_unlock(&(curscene->state_lock));
         break;
     case 3:
-        // pthread_mutex_lock(&(curscene->state_lock));
+        pthread_mutex_lock(&(curscene->state_lock));
         *(curscene->state_menu) = 3;
-        // pthread_mutex_unlock(&(curscene->state_lock));
+        pthread_mutex_unlock(&(curscene->state_lock));
         break;
     }
 }
 
 void* calculate_escape_rate(void* args){
     pokezone_scene * curscene = (pokezone_scene *)args;
-    int escaperate = curscene->capturedmode_pokemon->capture;
+    int escaperate = curscene->capturedmode_pokemon->escape;
     while(1){
         if(*(curscene->state_menu) != 1) break;
-        curscene->capturedmode_pokemon->capture += escaperate;
+        curscene->capturedmode_pokemon->escape += escaperate;
         sleep(curscene->capturedmode_pokemon->rate);
     }
 }
 
 void remove_pokemon_from_pokedex(pokezone_scene * curscene,int index){
-    for(int i = index; i < curscene->sizepokedex; i++){
-        memcpy(curscene->pokedex + i,curscene->pokedex + i + 1,sizeof(pokemon));
+    pthread_mutex_lock(&(curscene->pokedex_lock));
+    for(int i = index; i < curscene->sizepokedex - 1; i++){
+        curscene->pokedex[i] = curscene->pokedex[i+1];
     }
     curscene->sizepokedex--;
+    pthread_mutex_unlock(&(curscene->pokedex_lock));
 }
 void start_capture_mode(pokezone_scene * curscene){
     pthread_t pokemon_thread;
-
+    curscene->deact_lull = 0;
     int iret = pthread_create(&pokemon_thread,NULL,calculate_escape_rate,(void*)curscene);
     if(iret){
         fprintf(stderr,"Error - pthread_create() return code: %d\n",iret);
@@ -239,16 +247,16 @@ void tangkap_action(pokezone_scene * curscene){
         return;
     }
     int rando = rand()%100;
-    if(rando > (curscene->capturedmode_pokemon->capture + 20 * curscene->lullaby_state)){
+    if(rando < (curscene->capturedmode_pokemon->capture + 20 * curscene->lullaby_state)){
         if(curscene->sizepokedex >=7){
             curscene->pokedollar += curscene->capturedmode_pokemon->pokedollar;
             return;
         }
-        printf("ketangkap");
         pokemon * put_to_pokedex = (pokemon *)malloc(sizeof(pokemon));
         memcpy(put_to_pokedex,curscene->capturedmode_pokemon, sizeof(pokemon));
+        pthread_mutex_lock(&(curscene->pokedex_lock));
         memcpy(curscene->pokedex + curscene->sizepokedex,put_to_pokedex,sizeof(pokemon));
-
+        pthread_mutex_unlock(&(curscene->pokedex_lock));
         pthread_mutex_init(&((curscene->pokedex + curscene->sizepokedex)->lock),NULL);
 
         pokedex_pokemon * pokedekusu = (pokedex_pokemon*)malloc(sizeof(pokedex_pokemon));
@@ -263,11 +271,12 @@ void tangkap_action(pokezone_scene * curscene){
             fprintf(stderr,"Error - pthread_create() return code: %d\n",iret);
             exit(EXIT_FAILURE);
         }
-
+        pthread_mutex_lock(&(curscene->pokedex_lock));
         curscene->sizepokedex++;
+        pthread_mutex_unlock(&(curscene->pokedex_lock));
         curscene->player_stock->pokeball--;
 
-        // pthread_mutex_lock(&(curscene->state_lock));
+        pthread_mutex_lock(&(curscene->state_lock));
         *(curscene->state_menu) = 0;
         pthread_mutex_unlock(&(curscene->state_lock));
         *(curscene->state_cari) = 0;
@@ -275,24 +284,28 @@ void tangkap_action(pokezone_scene * curscene){
     }
 }
 void *lull_powder(void* args){
-    int init_time = time(NULL);
     pokezone_scene * curscene = (pokezone_scene*)args;
 
-    while(1){
-        if((init_time - time(NULL)) == 10){
-            pthread_mutex_lock(&(curscene->lull_lock));
-            curscene->lullaby_state = 0;
-            pthread_mutex_unlock(&(curscene->lull_lock));
+    clock_t init;
+    init = clock();
+    while(1 && curscene->deact_lull != 1){
+        init = clock() - init;
+        int sec_taken =(int) ((int)init)/CLOCKS_PER_SEC;
+        if(sec_taken == 10){
+            break;
         }
         pthread_mutex_lock(&(curscene->lull_lock));
         curscene->lullaby_state = 1;
         pthread_mutex_unlock(&(curscene->lull_lock));
     }
+    pthread_mutex_lock(&(curscene->lull_lock));
+    curscene->lullaby_state = 0;
+    pthread_mutex_unlock(&(curscene->lull_lock));
 }
 void activate_lull(pokezone_scene * curscene){
     if(curscene->player_stock->lull_pow <= 0)return;
     pthread_t lull_thread;
-
+    curscene->deact_lull = 0;
     int iret = pthread_create(&lull_thread,NULL,lull_powder,(void*)curscene);
     if(iret){
         fprintf(stderr,"Error - pthread_create() return code: %d\n",iret);
@@ -311,13 +324,38 @@ void input_capturemode(pokezone_scene * curscene, int input){
         activate_lull(curscene);
         break;
     case 3:
-        // pthread_mutex_lock(&(curscene->state_lock));
+        pthread_mutex_lock(&(curscene->state_lock));
         *(curscene->state_menu) = 0;
-        // pthread_mutex_unlock(&(curscene->state_lock));
+        pthread_mutex_unlock(&(curscene->state_lock));
         pthread_mutex_lock(&(curscene->lull_lock));
         curscene->lullaby_state = 0;
         pthread_mutex_unlock(&(curscene->lull_lock));
+        curscene->deact_lull = 1;
         break;
+    }
+}
+
+void buy_lullaby(pokezone_scene * curscene){
+    if(curscene->player_stock->lull_pow >= 99 || curscene->stock->lull_pow <= 0) return;
+    if(curscene->pokedollar >= 60){
+        curscene->pokedollar -= 60;
+        curscene->player_stock->lull_pow++;
+    }
+}
+
+void buy_pokeball(pokezone_scene * curscene){
+    if(curscene->player_stock->pokeball >= 99 || curscene->stock->pokeball <= 0) return;
+    if(curscene->pokedollar >= 5){
+        curscene->pokedollar -= 5;
+        curscene->player_stock->pokeball++;
+    }
+}
+
+void buy_berry(pokezone_scene * curscene){
+    if(curscene->player_stock->berry >= 99 || curscene->stock->berry <= 0) return;
+    if(curscene->pokedollar >= 15){
+        curscene->pokedollar -= 15;
+        curscene->player_stock->berry++;
     }
 }
 
@@ -326,27 +364,32 @@ void input_shop(pokezone_scene * curscene, int input){
     {
     case 1:
         //fungsi beli lullaby
+        buy_lullaby(curscene);
         break;
     case 2:
         //fungsi belu pokeball
+        buy_pokeball(curscene);
         break;
     case 3:
         //fungsi beli berry
+        buy_berry(curscene);
         break;
     case 4:
-        // pthread_mutex_lock(&(curscene->state_lock));
+        pthread_mutex_lock(&(curscene->state_lock));
         *(curscene->state_menu) = 0;
-        // pthread_mutex_unlock(&(curscene->state_lock));
+        pthread_mutex_unlock(&(curscene->state_lock));
         break;
     }
 }
 
 void give_berry(pokezone_scene * curscene){
+    if(curscene->player_stock->berry <= 0) return;
     for(int i=0;i<curscene->sizepokedex;i++){
         pthread_mutex_lock(&(curscene->pokedex[i].lock));
         curscene->pokedex[i].ap += 10;
         pthread_mutex_unlock(&(curscene->pokedex[i].lock));
     }
+    curscene->player_stock->berry--;
 }
 
 void input_pokedex(pokezone_scene * curscene, int input){
@@ -356,26 +399,25 @@ void input_pokedex(pokezone_scene * curscene, int input){
         give_berry(curscene);
         break;
     case 2:
-        // pthread_mutex_lock(&(curscene->state_lock));
+        pthread_mutex_lock(&(curscene->state_lock));
         *(curscene->state_menu) = 4;
-        // pthread_mutex_unlock(&(curscene->state_lock));
+        pthread_mutex_unlock(&(curscene->state_lock));
         break;
     case 3:
-        // pthread_mutex_lock(&(curscene->state_lock));
+        pthread_mutex_lock(&(curscene->state_lock));
         *(curscene->state_menu) = 0;
-        // pthread_mutex_unlock(&(curscene->state_lock));
+        pthread_mutex_unlock(&(curscene->state_lock));
         break;
     }
 }
 
 void input_lepas(pokezone_scene * curscene, int input){
-    printf("%d %d\n",curscene->pokedollar,curscene->pokedex[input-1].pokedollar);
     curscene->pokedollar += curscene->pokedex[input-1].pokedollar;
     remove_pokemon_from_pokedex(curscene,input-1);
 
-    // pthread_mutex_lock(&(curscene->state_lock));
+    pthread_mutex_lock(&(curscene->state_lock));
     *(curscene->state_menu) = 2;
-    // pthread_mutex_unlock(&(curscene->state_lock));
+    pthread_mutex_unlock(&(curscene->state_lock));
 }
 
 void input_goto(pokezone_scene * curscene, int input){
@@ -385,13 +427,13 @@ void input_goto(pokezone_scene * curscene, int input){
     case 1:
         pthread_mutex_lock(&(curscene->state_lock));
         *(curscene->state_menu) = 1;
-        // pthread_mutex_unlock(&(curscene->state_lock));
+        pthread_mutex_unlock(&(curscene->state_lock));
         break;
     
     case 2:
-        // pthread_mutex_lock(&(curscene->state_lock));
+        pthread_mutex_lock(&(curscene->state_lock));
         *(curscene->state_menu) = 0;
-        // pthread_mutex_unlock(&(curscene->state_lock));
+        pthread_mutex_unlock(&(curscene->state_lock));
         *(curscene->state_cari) = 0;
         break;
     }
@@ -401,8 +443,8 @@ void* render_scene(void* args){
     struct timespec ts;
     int rs;
 
-    ts.tv_sec = 1/30;
-    ts.tv_nsec = 33333333;
+    ts.tv_sec = 1/2;
+    ts.tv_nsec = 500000000;
     pokezone_scene * curscene = (pokezone_scene *)args;
     while(1){
         system("clear");
@@ -428,8 +470,8 @@ void* render_scene(void* args){
                 break;
         }
         // usleep(166666);
-        // rs = nanosleep(&ts,&ts);
-        sleep(1);
+        rs = nanosleep(&ts,&ts);
+        // sleep(1);
     }
 }
 
@@ -470,8 +512,10 @@ int main(int argc, char const *argv[]){
     curscene->pokedollar = 0;
     curscene->sizepokedex = 0;
     curscene->lullaby_state = 0;
+    curscene->deact_lull = 0;
     pthread_mutex_init(&(curscene->lull_lock),NULL);
     pthread_mutex_init(&(curscene->state_lock),NULL);
+    pthread_mutex_init(&(curscene->pokedex_lock),NULL);
 
     // printf("current pokemon : %s\n",cur_pokemon->name);
     int input;
