@@ -46,8 +46,13 @@ queue_t * init_queue(){
 
 
 void enqueue(player_t * player, queue_t * queue){
+    if(player == NULL) {
+        printf("enqueueing null\n");
+        return;
+    }
+    printf("%d is enqueued\n",player->socket_id);
     node_t * tmp = init_node(player);
-    if(queue->back == NULL && queue->front == NULL){
+    if(queue->back == NULL || queue->front == NULL){
         queue->front = tmp;
     }
     else if(queue->back == queue->front){
@@ -61,13 +66,28 @@ void enqueue(player_t * player, queue_t * queue){
 }
 
 player_t * dequeue(queue_t * queue){
-    if(queue->front == NULL)return NULL;
+    if(queue->front == NULL && queue->back == NULL)return NULL;
     node_t * temp = queue->front;
-    player_t * tmp = queue->front->data;
-    queue->front = queue->front->next;
-    free(temp);
+    player_t * tmp = temp->data;
+
+    if(queue->front == queue->back){
+        queue->front = NULL;
+        queue->back = NULL;
+    }else{
+        queue->front = queue->front->next;
+    }
     queue->count--;
+    free(temp);
     return tmp;
+}
+
+void printQueue(queue_t * queue){
+    node_t * temp = queue->front;
+    while(temp != NULL){
+        printf("%d ",temp->data->socket_id);
+        temp = temp->next;
+    }
+    printf(" queue done printing, number of element : %d\n",queue->count);
 }
 
 
@@ -81,7 +101,7 @@ typedef struct socket_s{
 typedef struct server_s{
     socket_t * server_socket;
     queue_t * player_queue;
-    FILE * akun;
+    pthread_mutex_t queue_lock;
 }server_t;
 
 typedef struct player_thread{
@@ -118,6 +138,7 @@ void* match(void* args){
     char * findmessage = "match_found";
     while(1){
         if(serverMain->player_queue->count >= 2){
+            pthread_mutex_lock((&serverMain->queue_lock));
             // printf("dequque ing\n");
             player_t * player1 = dequeue(serverMain->player_queue);
             player_t * player2 = dequeue(serverMain->player_queue);
@@ -127,6 +148,7 @@ void* match(void* args){
             sendResponse(player2->socket_id,findmessage,strlen(findmessage),0);
             *(player1->in_match) = 1;
             *(player1->in_match) = 1;
+            pthread_mutex_unlock((&serverMain->queue_lock));
         }
     }
 }
@@ -167,6 +189,9 @@ void * player_handler(void* args){
 
 
     while(1){
+        if(player == NULL || player->socket_id <=0 ){
+            printf("wtf\n");
+        }
         char buffer[2048];
         memset(buffer,0,sizeof(buffer));
         printf("try reading request\n");
@@ -222,6 +247,9 @@ void * player_handler(void* args){
         if(strcmp(buffer,"find")==0 && *(player->login) == 1 && *(player->in_match) == 0){
             char * finding = "finding...";
             enqueue(player,server->player_queue);
+            pthread_mutex_lock((&server->queue_lock));
+            printQueue(server->player_queue);
+            pthread_mutex_unlock((&server->queue_lock));
             printf("enqueue ok\n");
             while(player->enemy == NULL){
                 sendResponse(player->socket_id,finding,strlen(finding),0);
@@ -234,7 +262,8 @@ void * player_handler(void* args){
 
         if(strcmp(buffer,"shoot")==0 && *(player->in_match) == 1 && *(player->login) == 1 && player->enemy != NULL){
             char * damagemessage = "damage";
-            sendResponse(player->enemy->socket_id,damagemessage,strlen(damagemessage),0);
+            if(player->enemy != NULL)
+                sendResponse(player->enemy->socket_id,damagemessage,strlen(damagemessage),0);
         }
 
         if(strcmp(buffer,"logout")==0 && *(player->login) == 1 && *(player->in_match) == 0){
@@ -249,10 +278,10 @@ void * player_handler(void* args){
         }
         if(strcmp(buffer,"endmatch") == 0 && *(player->login) == 1 && *(player->in_match) == 1 && player->enemy != NULL){
             *(player->in_match) = 0;
+            // *(player->enemy->in_match) = 0;
             player->enemy = NULL;
         }
     }
-    free(player);
 }
 
 void* listen_thread(void* args){
@@ -300,7 +329,6 @@ void* listen_thread(void* args){
 
 
 int main(){
-    fflush(stdout);
     socket_t * server_socket = (socket_t *)malloc(sizeof(socket_t));
     int server_fd, new_socket;
     struct sockaddr_in address;
@@ -334,7 +362,7 @@ int main(){
     server_t * serverMain = (server_t *)malloc(sizeof(server_t));
     serverMain->server_socket = server_socket;
     serverMain->player_queue = init_queue();
-    serverMain->akun = fopen(FILE_AKUN,"a+");
+    pthread_mutex_init(&(serverMain->queue_lock),NULL);
 
     pthread_t listen_pt;
     int iret = pthread_create(&listen_pt,NULL,listen_thread,(void*)serverMain);

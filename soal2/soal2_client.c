@@ -194,17 +194,11 @@ void* reading_thread(void* args){
         if(strcmp(buffer,"win") == 0){
             *(curscene->is_over) = 1;
             *(curscene->is_win) = 1;
+        }else if(strcmp(buffer,"lose")==0){
+            *(curscene->is_over) = 1;
+            *(curscene->is_win) = 0;
         }
     }while(*(curscene->is_over) == 0);
-}
-
-void* rendering(void* args){
-    scene_data * curscene = (scene_data *)args;
-    system("clear");
-    while(*(curscene->is_over) == 0){
-        printf("%d health\n",*(curscene->health));
-        system("clear");
-    }
 }
 
 void render_match(scene_data * curscene){
@@ -238,7 +232,7 @@ void render_match(scene_data * curscene){
     }else if(*(curscene->is_win) == 0){
         printf("Game berakhir kamu kalah\n");
     }
-    char * endgame = "endgame";
+    char * endgame = "endmatch";
     sendRequest(*(curscene->socket->server_fd),endgame,strlen(endgame),0);
     *(curscene->scene_state) = 3;
 }
