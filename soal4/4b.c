@@ -58,7 +58,6 @@ int main(void)
         pthread_join(threads[i], NULL);
     }
 
-    printf("Hasil penambahan matriks : \n");
     for (int i = 0; i < 4; i++) { 
         for (int j = 0; j < 5; j++)  {
             printf("%d ",items->mathasil[i+j]);
