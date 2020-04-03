@@ -580,6 +580,7 @@ int main(int argc, char * argv[]){
     }
 }
 ```
+Akan tetapi, untuk program Soal nomor 3 ini masih memiliki kelemahan tidak dapat menangani karakter khusus seperti *
 
 Soal 4
 
