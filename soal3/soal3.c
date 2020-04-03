@@ -42,42 +42,48 @@ int is_regular_file( char *path)
 }
 
 
-char *get_filename_ext(char *filename) {
-    char * extname = (char *)malloc(sizeof(char) * strlen(filename));
-    memset(extname,0,sizeof(char) * strlen(filename));
+char * get_filename_ext(char *filename) {
+    char * extname = (char*)malloc(sizeof(char)*(strlen(filename)));
+    memset(extname,0,sizeof(char)*(strlen(filename)));
     char *dot = strrchr(filename, '.');
     if(!dot || dot == filename){
         strcpy(extname,"Unknown");
         return extname;
     }
+    // if(strcmp(dot+1,"*")==0){
+    //     strcpy(extname,"\\");
+    //     strcat(extname,dot+1);
+    //     tolowerstr(extname);
+    //     return extname;
+    // }
+    // strcpy(extname,"'");
     strcpy(extname,dot+1);
+    // strcat(extname,"'");
     tolowerstr(extname);
+    printf("extension : %s\n",extname);
     return extname;
-}
-
-char * makeDirAndGetPath(file_t * filenow, char * extensionName){
-    char * pathname = (char*)malloc(sizeof(char) * (strlen(filenow->curDir) + strlen(extensionName)));
-    memset(pathname,0,sizeof(char) * (strlen(filenow->curDir) + strlen(extensionName)));
-    strcpy(pathname,filenow->curDir);
-    strcat(pathname,"/");
-    strcat(pathname,extensionName);
-    mkdir(pathname,0777);
-    strcat(pathname,"/");
-    return pathname;
 }
 
 void* checkFolderAndCopy(void* args){
     // printf("enter\n");
     file_t * filenow = (file_t*)args;
     char * extensionName = get_filename_ext(filenow->filename);
-    char * pathname = makeDirAndGetPath(filenow,extensionName);
+    char * pathname = (char*)malloc(sizeof(char) * (strlen(filenow->curDir) + strlen(extensionName)));
+    memset(pathname,0,sizeof(char) * (strlen(filenow->curDir) + strlen(extensionName)));
+    strcpy(pathname,filenow->curDir);
+    strcat(pathname,"/");
+    strcat(pathname,extensionName);
+    printf("making directory...%s\n",pathname);
     mkdir(pathname,0777);
-    char * buffer = (char*)malloc(sizeof(char) * (strlen(pathname) + strlen(basename(filenow->filename))));
-    memset(buffer,0,sizeof(char) * (strlen(pathname) + strlen(basename(filenow->filename))));
+    int val = mkdir(pathname,0777);
+    if(val == EEXIST){
+        printf("Directory made!\n");
+    }
+    strcat(pathname,"/");
+    char buffer[PATH_MAX +1];
+    memset(buffer,0,sizeof(buffer));
     strcpy(buffer,pathname);
     strcat(buffer,basename(filenow->filename));
-    printf("from %s\n",filenow->filename);
-    printf("to %s\n",buffer);
     rename(filenow->filename,buffer);
     // remove(filenow->filename);
 }
