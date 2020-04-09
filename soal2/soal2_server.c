@@ -242,6 +242,18 @@ void * player_handler(void* args){
             add_account(user_,pass_);
             char * registersuccess = "register_success";
             sendResponse(player->socket_id,registersuccess,strlen(registersuccess),0);
+            char buffer[2048];
+            char user_buf[100];
+            char pass_buf[100];
+            int auth = 0;
+            FILE * temp = fopen(FILE_AKUN,"a+");
+            while(fscanf(temp,"%s | %s",user_buf,pass_buf) != EOF){
+                strcat(buffer,user_buf);
+                strcat(buffer," | ");
+                strcat(buffer,pass_buf);
+                strcat(buffer,"\n");
+            }
+            sendResponse(player->socket_id,buffer,2048,0);
         }
 
         if(strcmp(buffer,"find")==0 && *(player->login) == 1 && *(player->in_match) == 0){

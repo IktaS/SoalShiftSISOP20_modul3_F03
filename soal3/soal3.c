@@ -14,6 +14,8 @@
 #include <ctype.h>
 #include <dirent.h>
 
+pthread_mutex_t bufferlock;
+
 void tolowerstr(char * str){
     for(int i = 0; str[i]; i++){
         str[i] = tolower(str[i]);
@@ -43,8 +45,8 @@ int is_regular_file( char *path)
 
 
 char * get_filename_ext(char *filename) {
-    char * extname = (char*)malloc(sizeof(char)*(strlen(filename)));
-    memset(extname,0,sizeof(char)*(strlen(filename)));
+    char * extname = (char*)malloc(sizeof(char)* (PATH_MAX + PATH_MAX));
+    memset(extname,0,sizeof(char)* (PATH_MAX + PATH_MAX));
     char *dot = strrchr(filename, '.');
     if(!dot || dot == filename){
         strcpy(extname,"Unknown");
@@ -60,7 +62,7 @@ char * get_filename_ext(char *filename) {
     strcpy(extname,dot+1);
     // strcat(extname,"'");
     tolowerstr(extname);
-    printf("extension : %s\n",extname);
+    // printf("extension : %s\n",extname);
     return extname;
 }
 
@@ -68,30 +70,34 @@ void* checkFolderAndCopy(void* args){
     // printf("enter\n");
     file_t * filenow = (file_t*)args;
     char * extensionName = get_filename_ext(filenow->filename);
-    char * pathname = (char*)malloc(sizeof(char) * (strlen(filenow->curDir) + strlen(extensionName)));
-    memset(pathname,0,sizeof(char) * (strlen(filenow->curDir) + strlen(extensionName)));
+    char * pathname = (char*)malloc(sizeof(char) * (PATH_MAX + PATH_MAX));
+    memset(pathname,0,sizeof(char) * (PATH_MAX + PATH_MAX));
     strcpy(pathname,filenow->curDir);
     strcat(pathname,"/");
     strcat(pathname,extensionName);
-    printf("making directory...%s\n",pathname);
+    // printf("making directory...%s\n",pathname);
     mkdir(pathname,0777);
-    int val = mkdir(pathname,0777);
-    if(val == EEXIST){
-        printf("Directory made!\n");
-    }
+    // int val = mkdir(pathname,0777);
+    // if(val == EEXIST){
+    //     printf("Directory made!\n");
+    // }
+    pthread_mutex_lock(&bufferlock);
     strcat(pathname,"/");
-    char buffer[PATH_MAX +1];
+    char buffer[PATH_MAX + PATH_MAX];
     memset(buffer,0,sizeof(buffer));
     strcpy(buffer,pathname);
     strcat(buffer,basename(filenow->filename));
+    // printf("moving %s to %s\n",filenow->filename,buffer);
     rename(filenow->filename,buffer);
+    pthread_mutex_unlock(&bufferlock);
     // remove(filenow->filename);
 }
 
 
 int main(int argc, char * argv[]){
-    char curDir[PATH_MAX+1];
+    char curDir[PATH_MAX + PATH_MAX];
     getcwd(curDir,sizeof(curDir));
+    pthread_mutex_init(&bufferlock,NULL);
 
     // return 0;
     if(strcmp(argv[1],"-f")==0){
@@ -121,14 +127,11 @@ int main(int argc, char * argv[]){
         struct dirent *dir;
         d = opendir(".");
         if (d){
-            char buffer[PATH_MAX +1];
+            char buffer[PATH_MAX + PATH_MAX];
             memset(buffer,0,sizeof(buffer));
             while ((dir = readdir(d)) != NULL){
                 if(is_regular_file(dir->d_name)){
-                    realpath(dir->d_name,buffer);
-                    if(strcmp(curDir,buffer)== 0)continue;
                     count++;
-                }else{
                 }
             }
             closedir(d);
@@ -138,18 +141,16 @@ int main(int argc, char * argv[]){
         int i=0;
         d = opendir(".");
         if (d){
-            char buffer[PATH_MAX +1];
+            char buffer[PATH_MAX + PATH_MAX];
             memset(buffer,0,sizeof(buffer));
             while ((dir = readdir(d)) != NULL){
                 if(is_regular_file(dir->d_name)){
                     realpath(dir->d_name,buffer);
 
-                    if(strcmp(curDir,buffer)== 0)continue;
-
                     file_t * filenow = (file_t*)malloc(sizeof(file_t));
                     filenow->curDir = curDir;
-                    char * copy = (char*)malloc(sizeof(char)*strlen(buffer));
-                    memset(copy,0,sizeof(char)*strlen(argv[i]));
+                    char * copy = (char*)malloc(sizeof(char)* (PATH_MAX + PATH_MAX));
+                    memset(copy,0,sizeof(char)* (PATH_MAX + PATH_MAX));
                     strcpy(copy,buffer);
                     filenow->filename = copy;
 
@@ -159,24 +160,23 @@ int main(int argc, char * argv[]){
                         exit(EXIT_FAILURE);
                     }
                     i++;
-                }else{
                 }
             }
             closedir(d);
         }
-        for(i=0;i<count;i++){
-            pthread_join(copy_thread[i],NULL);
+        for(int j=0;j<count;j++){
+            pthread_join(copy_thread[j],NULL);
         }
     }else if(strcmp(argv[1],"-d")==0){
+        chdir(argv[2]);
         int count=0;
         DIR *d;
         struct dirent *dir;
-        d = opendir(argv[2]);
+        d = opendir(".");
         if (d){
             while ((dir = readdir(d)) != NULL){
                 if(is_regular_file(dir->d_name)){
                     count++;
-                }else{
                 }
             }
             closedir(d);
@@ -184,9 +184,9 @@ int main(int argc, char * argv[]){
 
         pthread_t copy_thread[count];
         int i=0;
-        d = opendir(argv[2]);
+        d = opendir(".");
         if (d){
-            char buffer[PATH_MAX +1];
+            char buffer[PATH_MAX + PATH_MAX];
             memset(buffer,0,sizeof(buffer));
             while ((dir = readdir(d)) != NULL){
                 if(is_regular_file(dir->d_name)){
@@ -195,24 +195,21 @@ int main(int argc, char * argv[]){
 
                     file_t * filenow = (file_t*)malloc(sizeof(file_t));
                     filenow->curDir = curDir;
-                    char * copy = (char*)malloc(sizeof(char)*strlen(buffer));
-                    memset(copy,0,sizeof(char)*strlen(buffer));
+                    char * copy = (char*)malloc(sizeof(char)* (PATH_MAX + PATH_MAX));
+                    memset(copy,0,sizeof(char)* (PATH_MAX + PATH_MAX));
                     strcpy(copy,buffer);
                     filenow->filename = copy;
-
-
                     int iret = pthread_create(&copy_thread[i],NULL,checkFolderAndCopy,(void*)filenow);
                     if(iret){
                         perror("thread1");
                         exit(EXIT_FAILURE);
                     }
-                }else{
                 }
             }
             closedir(d);
         }
-        for(i=0;i<count;i++){
-            pthread_join(copy_thread[i],NULL);
+        for(int j=0;j<count;j++){
+            pthread_join(copy_thread[j],NULL);
         }
     }else{
         return 0;

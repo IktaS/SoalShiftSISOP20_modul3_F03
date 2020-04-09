@@ -25,7 +25,7 @@ void* tambah(void* args)
     *(items->i) += 1;
     pthread_mutex_unlock(&(items->ilock));
     int sum = 0;
-    for(int j=0;j<items->matinit[temp];j++){
+    for(int j=0;j<=items->matinit[temp];j++){
         sum += j;
     }
     pthread_mutex_lock(&(items->matlock));
@@ -40,6 +40,12 @@ int main(void)
     int shmid = shmget(key, sizeof(int)*4*5, IPC_CREAT | 0666);
     mat = (int *)shmat(shmid, NULL, 0);
 
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 5; j++)  {
+            printf("%d ",mat[i*5+j]);
+        }
+        printf("\n");
+    }
     pthread_t threads[20];
 
     thread_items * items = (thread_items*) malloc(sizeof(thread_items));
@@ -58,12 +64,12 @@ int main(void)
         pthread_join(threads[i], NULL);
     }
 
-    for (int i = 0; i < 4; i++) { 
+    for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 5; j++)  {
-            printf("%d ",items->mathasil[i+j]);
+            printf("%d ",items->mathasil[i*5+j]);
         }
         printf("\n");
-    } 
+    }
 
     shmdt(mat);
     shmctl(shmid, IPC_RMID, NULL);

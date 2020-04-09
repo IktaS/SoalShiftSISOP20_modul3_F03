@@ -117,6 +117,7 @@ void* pokemon_api(void* args){
     while(1){
         pthread_mutex_lock(&poke->lock);
         get_pokemon(poke);
+        // printf("%s -- %d\n",poke->name,poke->ap);
         pthread_mutex_unlock(&poke->lock);
         sleep(1);
     }
@@ -142,7 +143,11 @@ void* shop_api(void* args){
         }else{
             stock->berry += 200 - stock->berry;
         }
+        printf("lull pow : %d\n",stock->lull_pow);
+        printf("pokeball : %d\n",stock->pokeball);
+        printf("berry : %d\n",stock->berry);
         pthread_mutex_unlock(&stock->lock);
+
     }
 }
 

@@ -144,6 +144,9 @@ void render_register(scene_data * curscene){
     if(strcmp(buffer,"register_success")==0){
         printf("register success\n");
     }
+    memset(buffer,0,sizeof(buffer));
+    readResponse(*(curscene->socket->server_fd),buffer,sizeof(buffer));
+    printf("%s",buffer);
     *(curscene->scene_state) = 0;
 }
 
