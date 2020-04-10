@@ -882,9 +882,18 @@ yang bertugas menjalankan shop beserta mengatur stocknya tiap 10 detik.
 
 # Soal2
 
-Pada soal 2, diminta untuk membuat text based game dengan 2 program, yaitu server dan player.\
-a) server.c
-memiliki fungsi main:
+Pada soal 2, diminta untuk membuat text based game dengan 2 program, yaitu server dan player.
+
+# a) soal2_server.c
+Sebelum memasuki pembahasan, ada bagian program yang perlu diubah agar program dapat berjalan dengan baik.
+Di bagian awal terdapat: 
+```
+#define FILE_AKUN   "/home/ikta/akun.txt"
+```
+Bagian ini akan menjadi direktori tempat file akun.txt yang menyimpan akun dibuat. Oleh karena itu nama direktori perlu menyesuaikan masing-masing pengguna. Apabila bagian ini tidak dirubah, maka program tidak akan dapat membuat file akun.txt yang berakibat gagalnya melakukan registrasi dan membuat program server berhenti, kecuali apabila nama dari user adalah "ikta".\
+[gagal]
+[berhasil]
+Server memiliki fungsi main:
 ```
 int main(){
     socket_t * server_socket = (socket_t *)malloc(sizeof(socket_t));
@@ -897,25 +906,31 @@ int main(){
     server_socket->address = &address;
     server_socket->opt = &opt;
     server_socket->addrlen = &addrlen;
+
     if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
         perror("socket failed");
         exit(EXIT_FAILURE);
     }
+
     if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
         perror("setsockopt");
         exit(EXIT_FAILURE);
     }
+
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = INADDR_ANY;
     address.sin_port = htons(PORT);
+
     if (bind(server_fd, (struct sockaddr *)&address, sizeof(address))<0) {
         perror("bind failed");
         exit(EXIT_FAILURE);
     }
+
     server_t * serverMain = (server_t *)malloc(sizeof(server_t));
     serverMain->server_socket = server_socket;
     serverMain->player_queue = init_queue();
     pthread_mutex_init(&(serverMain->queue_lock),NULL);
+
     pthread_t listen_pt;
     int iret = pthread_create(&listen_pt,NULL,listen_thread,(void*)serverMain);
     if(iret){
@@ -923,6 +938,7 @@ int main(){
         exit(EXIT_FAILURE);
     }
     printf("listen thread on\n");
+
     pthread_t match_pt;
     int iret1 = pthread_create(&match_pt,NULL,match,(void*)serverMain);
     if(iret1){
@@ -930,35 +946,460 @@ int main(){
         exit(EXIT_FAILURE);
     }
     printf("match thread on\n");
+
     pthread_join(listen_pt,NULL);
     pthread_join(match_pt,NULL);
+
     return 0;
+
 }
 ```
+Fungsi `main` akan membuat thread baru sesuai `int iret = pthread_create(&listen_pt,NULL,listen_thread,(void*)serverMain);` dan `int iret1 = pthread_create(&match_pt,NULL,match,(void*)serverMain);` yang masing-masing menjalankan fungsi:
+```
+void* listen_thread(void* args){
+    server_t * serverMain = (server_t *)args;
+    int * server_fd = serverMain->server_socket->server_fd;
+    struct sockaddr_in * address = serverMain->server_socket->address;
+    int * addrlen = serverMain->server_socket->addrlen;
+    while(1){
 
-b) client.c mempunyai fungsi main:
+        printf("listening...\n");
+        if( listen(*server_fd, 3) < 0){
+            perror("listen");
+            exit(EXIT_FAILURE);
+        }
+
+        int in_match = 0;
+        int login = 0;
+        player_t * temp_player = (player_t *)malloc(sizeof(player_t));
+        temp_player->enemy = NULL;
+        temp_player->in_match = &in_match;
+        temp_player->login = &login;
+
+        printf("accepting...\n");
+        if((temp_player->socket_id = accept(*server_fd,(struct sockaddr *) address, (socklen_t*)addrlen)) < 0){
+            perror("accept");
+            exit(EXIT_FAILURE);
+        }
+        printf("got player socket id %d\n",temp_player->socket_id);
+
+        player_args * thread_args = (player_args*)malloc(sizeof(player_args));
+        thread_args->player = temp_player;
+        thread_args->server = serverMain;
+
+        printf("making player thread...\n");
+        pthread_t p_thread;
+
+        int iret = pthread_create(&p_thread,NULL,player_handler,(void*)thread_args);
+        if(iret){
+            perror("p_thread");
+            exit(EXIT_FAILURE);
+        }
+        printf("player thread made!\n");
+    }
+}
+```
+dan
+```
+void* match(void* args){
+    server_t * serverMain = (server_t *) args;
+    char * findmessage = "match_found";
+    while(1){
+        if(serverMain->player_queue->count >= 2){
+            pthread_mutex_lock((&serverMain->queue_lock));
+            // printf("dequque ing\n");
+            player_t * player1 = dequeue(serverMain->player_queue);
+            player_t * player2 = dequeue(serverMain->player_queue);
+            player1->enemy = player2;
+            player2->enemy = player1;
+            sendResponse(player1->socket_id,findmessage,strlen(findmessage),0);
+            sendResponse(player2->socket_id,findmessage,strlen(findmessage),0);
+            *(player1->in_match) = 1;
+            *(player1->in_match) = 1;
+            pthread_mutex_unlock((&serverMain->queue_lock));
+        }
+    }
+}
+```
+Karena adanya
+```
+    pthread_join(listen_pt,NULL);
+    pthread_join(match_pt,NULL);
+```
+, maka program `main` akan menunggu hingga ke-2 thread selesai dijalankan terlebih dahulu.
+Apabila thread `listen_thread` berhasil dibuat, akan ditampilkan pesan "listen thread on\n". Hal yang sama berlaku untuk `match`, di mana akan ditampilkan pesan "match thread on\n" apabila thread berhasil dibuat.
+`listen_thread` akan menampilkan pesan "listening...\n",lalu "accepting...\n" ketika `listen_thread` siap menerima input.\
+Ketika soal2-client.c dijalankan di terminal lain, `listen_thread` kemudian akan melakukan `printf("got player socket id %d\n",temp_player->socket_id);` apabila berhasil. "making player thread...\n" akan ditampilkan ketika `listen_thread` hendak membuat player thread dengan:
+```
+void * player_handler(void* args){
+    printf("player handler in\n");
+    player_args * t_args = (player_args *)args;
+    server_t * server = t_args->server;
+    player_t * player = t_args->player;
+
+
+    while(1){
+        if(player == NULL || player->socket_id <=0 ){
+            printf("wtf\n");
+        }
+        char buffer[2048];
+        memset(buffer,0,sizeof(buffer));
+        printf("try reading request\n");
+        int val = read(player->socket_id,buffer,sizeof(buffer));
+        printf("got request!  %s\n",buffer);
+        if(val == 0)break;
+        if(strcmp(buffer,"login")==0){
+
+            char user_[100];
+            char pass_[100];
+
+            printf("reading username...\n");
+            readRequest(player->socket_id,user_,sizeof(user_));
+            printf("got username! %s\n",user_);
+
+            printf("reading password...\n");
+            readRequest(player->socket_id,pass_,sizeof(pass_));
+            printf("got password! %s\n",pass_);
+
+            int auth = check_account(user_,pass_);
+            if(auth){
+                char * message = "login_success";
+                sendResponse(player->socket_id,message,strlen(message),0);
+                *(player->login) = 1;
+                fflush(stdout);
+            }else{
+                char * message = "login_failed";
+                sendResponse(player->socket_id,message,strlen(message),0);
+                *(player->login) = 0;
+                fflush(stdout);
+            }
+        }
+        if(strcmp(buffer,"register")==0){
+            char user_[100];
+            char pass_[100];
+
+
+            printf("reading username...\n");
+            readRequest(player->socket_id,user_,sizeof(user_));
+            printf("got username! %s\n",user_);
+
+
+            printf("reading password...\n");
+            readRequest(player->socket_id,pass_,sizeof(pass_));
+            printf("got password! %s\n",pass_);
+
+
+            add_account(user_,pass_);
+            char * registersuccess = "register_success";
+            sendResponse(player->socket_id,registersuccess,strlen(registersuccess),0);
+            char buffer[2048];
+            char user_buf[100];
+            char pass_buf[100];
+            int auth = 0;
+            FILE * temp = fopen(FILE_AKUN,"a+");
+            while(fscanf(temp,"%s | %s",user_buf,pass_buf) != EOF){
+                printf("%s | %s\n",user_buf,pass_buf);
+            }
+            // sendResponse(player->socket_id,buffer,2048,0);
+        }
+
+        if(strcmp(buffer,"find")==0 && *(player->login) == 1 && *(player->in_match) == 0){
+            char * finding = "finding...";
+            enqueue(player,server->player_queue);
+            pthread_mutex_lock((&server->queue_lock));
+            printQueue(server->player_queue);
+            pthread_mutex_unlock((&server->queue_lock));
+            printf("enqueue ok\n");
+            while(player->enemy == NULL){
+                sendResponse(player->socket_id,finding,strlen(finding),0);
+                sleep(1);
+            }
+            char * findmessage = "match_found";
+            sendResponse(player->socket_id,findmessage,strlen(findmessage),0);
+            *(player->in_match) = 1;
+        }
+
+        if(strcmp(buffer,"shoot")==0 && *(player->in_match) == 1 && *(player->login) == 1 && player->enemy != NULL){
+            char * damagemessage = "damage";
+            if(player->enemy != NULL)
+                sendResponse(player->enemy->socket_id,damagemessage,strlen(damagemessage),0);
+        }
+
+        if(strcmp(buffer,"logout")==0 && *(player->login) == 1 && *(player->in_match) == 0){
+            *(player->login) = 0;
+            char * logoutmessage = "logout";
+            sendResponse(player->socket_id,logoutmessage,strlen(logoutmessage),0);
+        }
+
+        if(strcmp(buffer,"lose") == 0 && *(player->login) == 1 && *(player->in_match) == 1 && player->enemy != NULL){
+            char * winid = "win";
+            sendResponse(player->enemy->socket_id,winid,strlen(winid),0);
+        }
+        if(strcmp(buffer,"endmatch") == 0 && *(player->login) == 1 && *(player->in_match) == 1 && player->enemy != NULL){
+            *(player->in_match) = 0;
+            // *(player->enemy->in_match) = 0;
+            player->enemy = NULL;
+        }
+    }
+}
+```
+ "player thread made!\n" akan ditampilkan ketika thread selesai dibuat.\
+`listen_thread` kemudian akan kembali menampilkan "listening...\n",lalu "accepting...\n" ketika `listen_thread` siap menerima input.\
+`player_handler` akan menampilkan "player handler in\n" ketika pertama dibuat, lalu "try reading request\n" akan ditampilkan ketika siap menerima input. "got request!  %s\n" akan ditampilkan ketika `player_handler` menerima input dari terminal client. Isi dari %s akan menyesuaikan input dari terminal client.
+Apabila input berupa "login", maka
+```
+if(strcmp(buffer,"login")==0){
+
+            char user_[100];
+            char pass_[100];
+
+            printf("reading username...\n");
+            readRequest(player->socket_id,user_,sizeof(user_));
+            printf("got username! %s\n",user_);
+
+            printf("reading password...\n");
+            readRequest(player->socket_id,pass_,sizeof(pass_));
+            printf("got password! %s\n",pass_);
+
+            int auth = check_account(user_,pass_);
+            if(auth){
+                char * message = "login_success";
+                sendResponse(player->socket_id,message,strlen(message),0);
+                *(player->login) = 1;
+                fflush(stdout);
+            }else{
+                char * message = "login_failed";
+                sendResponse(player->socket_id,message,strlen(message),0);
+                *(player->login) = 0;
+                fflush(stdout);
+            }
+        }
+```
+if tersebut akan menjadi true, dan "reading username...\n" akan ditampilkan.\
+Fungsi `readRequest` :
+```
+int readRequest(int fd,void * buf, size_t size){
+    char buffer[2048];
+    memset(buffer,0,sizeof(buffer));
+    int val;
+	if((val =read(fd, buffer, sizeof(buffer))) < 0){
+		printf("read error");
+		exit(EXIT_FAILURE);
+	}
+    // printf("reading %s\n",buffer);
+	memcpy(buf, buffer, size);
+    return val;
+}
+```
+akan dijalankan untuk mendapat input dari client, lalu pada terminal server akan ditampilkan "got username! %s\n", dengan %s adalah input username dari terminal client.\
+"reading password...\n" akan ditampilkan ketika server siap menerima input berikutnya. Setelah input didapatkan melalui fungsi `readRequest`, "got password! %s\n" dengan %s adalah input password dari terminal client.\
+Berikutnya, fungsi `check_account` akan dijalankan untuk memeriksa kecocokan password dan username yang didapat dengan yang telah tercatat pada akun.txt. Apabila sesuai, maka "login_success" akan dikirim ke terminal client melalui fungsi `sendResponse`:
+```
+void sendResponse(int fd, void * buf, size_t size, int flag){
+    char buffer[2048];
+    memset(buffer,0,sizeof(buffer));
+    memcpy(buffer,buf,size);
+    // printf("sending %s\n",buffer);
+    if(send(fd,buffer,sizeof(buffer),flag)< 0){
+        perror("send error");
+        exit(EXIT_FAILURE);
+    }
+}
+```
+Apabila tidak sesuai, maka "login_failed" akan dikirim ke client melalui `sendResponse`. Nilai- nilai variabel akan dirubah sesuai kondisi.
+Apabila input berupa "register", maka:
+```
+if(strcmp(buffer,"register")==0){
+            char user_[100];
+            char pass_[100];
+
+
+            printf("reading username...\n");
+            readRequest(player->socket_id,user_,sizeof(user_));
+            printf("got username! %s\n",user_);
+
+
+            printf("reading password...\n");
+            readRequest(player->socket_id,pass_,sizeof(pass_));
+            printf("got password! %s\n",pass_);
+
+
+            add_account(user_,pass_);
+            char * registersuccess = "register_success";
+            sendResponse(player->socket_id,registersuccess,strlen(registersuccess),0);
+            char buffer[2048];
+            char user_buf[100];
+            char pass_buf[100];
+            int auth = 0;
+            FILE * temp = fopen(FILE_AKUN,"a+");
+            while(fscanf(temp,"%s | %s",user_buf,pass_buf) != EOF){
+                printf("%s | %s\n",user_buf,pass_buf);
+            }
+            // sendResponse(player->socket_id,buffer,2048,0);
+        }
+```
+if akan menjadi true.\
+Hampir sama dengan sebelumnya, "reading username...\n", "got username! %s\n", "reading password...\n", dan "got password! %s\n" akan ditampilkan sesuai input client. Ketika username dan password telah didapatkan, fungsi `add_account` akan dijalankan:
+```
+void add_account(char * username, char * password){
+    FILE * temp = fopen(FILE_AKUN,"a+");
+    char buffer[2048] = {0};
+    strcat(buffer,username);
+    strcat(buffer," | ");
+    strcat(buffer,password);
+    printf("key generated! %s\n",buffer);
+    fprintf(temp,"%s\n",buffer);
+    fclose(temp);
+}
+```
+"username" | "password" akan disimpan ke dalam akun.txt.\
+"key generated! %s\n" akan ditampilkan, dengan %s berupa username|password yang tadi telah dimasukkan.\
+"register_success" akan dikirim ke client dengan `sendResponse`.
+```
+while(fscanf(temp,"%s | %s",user_buf,pass_buf) != EOF){
+                printf("%s | %s\n",user_buf,pass_buf);
+            }
+``` 
+akan menampilkan semua akun yang telah tercatat di dalam akun.txt.\
+Apabila input berupa "find", pemain telah berhasi login, dan tidak sedang dalam match, maka:
+```
+if(strcmp(buffer,"find")==0 && *(player->login) == 1 && *(player->in_match) == 0){
+            char * finding = "finding...";
+            enqueue(player,server->player_queue);
+            pthread_mutex_lock((&server->queue_lock));
+            printQueue(server->player_queue);
+            pthread_mutex_unlock((&server->queue_lock));
+            printf("enqueue ok\n");
+            while(player->enemy == NULL){
+                sendResponse(player->socket_id,finding,strlen(finding),0);
+                sleep(1);
+            }
+            char * findmessage = "match_found";
+            sendResponse(player->socket_id,findmessage,strlen(findmessage),0);
+            *(player->in_match) = 1;
+        }
+```
+akan bernilai true.\
+`enqueue` adalah fungsi di mana:
+```
+void enqueue(player_t * player, queue_t * queue){
+    if(player == NULL) {
+        printf("enqueueing null\n");
+        return;
+    }
+    printf("%d is enqueued\n",player->socket_id);
+    node_t * tmp = init_node(player);
+    if(queue->back == NULL || queue->front == NULL){
+        queue->front = tmp;
+    }
+    else if(queue->back == queue->front){
+        queue->front->next = tmp;
+    }
+    else{
+        queue->back->next = tmp;
+    }
+    queue->back = tmp;
+    queue->count++;
+}
+```
+yang bertugas memasukkan pemain dalam antrian permainan. Ketika pemain berhasil diantrikan, "%d is enqueued\n" akan ditampilkan.
+`printQueue` adalah fungsi di mana:
+```
+void printQueue(queue_t * queue){
+    node_t * temp = queue->front;
+    while(temp != NULL){
+        printf("%d ",temp->data->socket_id);
+        temp = temp->next;
+    }
+    printf(" queue done printing, number of element : %d\n",queue->count);
+}
+```
+yang bertugas menampilkan pemain yang sedang mengantri, diikuti dengan " queue done printing, number of element : %d\n" di mana %d adalah banyaknya pemain yang mengantri.
+"enqueue ok\n" kemudian akan ditampilkan, menunjukkan bahwa antrian telah berhasil.
+```
+while(player->enemy == NULL){
+                sendResponse(player->socket_id,finding,strlen(finding),0);
+                sleep(1);
+            }
+```
+akan terus mengirimkan pesan "finding..." ke client hingga lawan tanding ditemukan dengan `sendResponse`. Fungsi `match` mengatur dari balik layar nilai dari player->enemy , yang menyebabkan while menjadi false.\
+`match` akan mulai bekerja ketika terdapat setidaknya 2 orang yang mengantri, sesuai dengan
+```
+if(serverMain->player_queue->count >= 2){
+            pthread_mutex_lock((&serverMain->queue_lock));
+            // printf("dequque ing\n");
+            player_t * player1 = dequeue(serverMain->player_queue);
+            player_t * player2 = dequeue(serverMain->player_queue);
+            player1->enemy = player2;
+            player2->enemy = player1;
+            sendResponse(player1->socket_id,findmessage,strlen(findmessage),0);
+            sendResponse(player2->socket_id,findmessage,strlen(findmessage),0);
+            *(player1->in_match) = 1;
+            *(player1->in_match) = 1;
+            pthread_mutex_unlock((&serverMain->queue_lock));
+        }
+```
+Ketika akhirnya lawan ditemukan, "match_found" akan di kirim ke client melalui `sendResponse`
+```
+	if(strcmp(buffer,"shoot")==0 && *(player->in_match) == 1 && *(player->login) == 1 && player->enemy != NULL){
+            char * damagemessage = "damage";
+            if(player->enemy != NULL)
+                sendResponse(player->enemy->socket_id,damagemessage,strlen(damagemessage),0);
+        }
+
+        if(strcmp(buffer,"logout")==0 && *(player->login) == 1 && *(player->in_match) == 0){
+            *(player->login) = 0;
+            char * logoutmessage = "logout";
+            sendResponse(player->socket_id,logoutmessage,strlen(logoutmessage),0);
+        }
+
+        if(strcmp(buffer,"lose") == 0 && *(player->login) == 1 && *(player->in_match) == 1 && player->enemy != NULL){
+            char * winid = "win";
+            sendResponse(player->enemy->socket_id,winid,strlen(winid),0);
+        }
+        if(strcmp(buffer,"endmatch") == 0 && *(player->login) == 1 && *(player->in_match) == 1 && player->enemy != NULL){
+            *(player->in_match) = 0;
+            // *(player->enemy->in_match) = 0;
+            player->enemy = NULL;
+        }
+```
+program di atas berhubungan dengan permainan, yang jika dijelaskan secara singkat dari atas ke bawah adalah sebagai berikut:\
+-if pertama bertugas mengirim damage ke lawan
+-if ke-2 bertugas melakukan logout
+-if ke-3 bertugas mengirim pesan ke lawan bahwa ia menang
+-if ke-4 bertugas menghentikan permainan 2 pemain.
+
+# b) soal2_client.c 
+Mempunyai fungsi main:
 ```
 int main(int argc, char const *argv[]) {
     socket_t * server = (socket_t*)malloc(sizeof(socket_t));
     int sock = 0, valread;
     struct sockaddr_in serv_addr;
+
     server->address = &serv_addr;
     server->server_fd = &sock;
+
     if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         printf("\n Socket creation error \n");
         return -1;
     }
+
     memset(&serv_addr, '0', sizeof(serv_addr));
+
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_port = htons(PORT);
+
     if(inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr)<=0) {
         printf("\nInvalid address/ Address not supported \n");
         return -1;
     }
+
     if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
         printf("\nConnection Failed \n");
         return -1;
     }
+
     int scene_state = 0;
     int health = 100;
     int is_alive = 1;
@@ -971,6 +1412,7 @@ int main(int argc, char const *argv[]) {
     curscene->is_alive = &is_alive;
     curscene->is_win = &is_win;
     curscene->is_over = &is_over;
+
     while(1){
         switch (scene_state)
         {
@@ -996,6 +1438,224 @@ int main(int argc, char const *argv[]) {
     }
 }
 ```
+Pada kondisi awal, case 0 akan aktif dan menjalankan `render_mainmenu`:
+```
+void render_mainmenu(scene_data * curscene){
+    char request[2048];
+    printf("1. Login\n");
+    printf("2. Register\n");
+    printf("   Choices : ");
+    scanf("%s",request);
+    if(strcmp(request,"login")==0){
+        *(curscene->scene_state) = 1;
+    }else if(strcmp(request,"register")==0){
+        *(curscene->scene_state) = 2;
+    }
+}
+```
+yang akan memberikan tampilan sebagai berikut:
+[Gambar]
+Pengguna lalu dapat mengetikkan "login" atau "register" untuk mengubah case pada `main`. Input selain 2 kata tersebut tidak akan merubah case, dan case 0 akan ditampilkan kembali.
+Apabila pengguna menginputkan "login", case 1 pada main akan dijalankan:
+```
+case 1:
+            render_login(curscene);
+            break;
+``` 
+di mana `render_login` adalah:
+```
+void render_login(scene_data * curscene){
+    char * request = "login";
+    sendRequest(*(curscene->socket->server_fd),request,strlen(request),0);
+    char userbuf[100];
+    char passbuf[100];
+    char buffer[2048] = {0};
+    printf("Username : ");
+    scanf("%s",userbuf);
+    sendRequest(*(curscene->socket->server_fd),userbuf,strlen(userbuf),0);
+    printf("Password : ");
+    scanf("%s",passbuf);
+    sendRequest(*(curscene->socket->server_fd),passbuf,strlen(passbuf),0);
+    readResponse(*(curscene->socket->server_fd),buffer,sizeof(buffer));
+    if(strcmp(buffer,"login_success")==0){
+        printf("login success\n");
+        *(curscene->scene_state) = 3;
+    }else{
+        printf("login failed\n");
+        *(curscene->scene_state) = 0;
+    }
+}
+```
+Serupa dengan pada server, `sendRequest` pada client akan mengirimkan pesan tertentu kepada server.
+```
+void sendRequest(int fd, void * buf, size_t size, int flag){
+    char buffer[2048] = {0};
+    memcpy(buffer,buf,size);
+    // printf("sending %s\n",buffer);
+    if(send(fd,buffer,sizeof(buffer),flag)< 0){
+        perror("send error");
+        exit(EXIT_FAILURE);
+    }
+}
+```
+"login" akan dikirimkan, lalu "Username : " akan ditampilkan pada layar. Setelah pengguna memasukkan usernamenya, username tersebut akan dikirim ke server dengan `sendRequest`.\
+Berikutnya, "Password : " akan ditampilkan. Setelah pengguna memasukkan passwordnya, password tersebut akan dikirim ke server dengan `sendRequest`.\
+Server kemudian akan mengirimkan balasan, yang dibaca oleh client dengan `readResponse`:
+```
+int readResponse(int fd,void * buf, size_t size){
+    char buffer[2048] = {0};
+    int val;
+	if((val =read(fd, buffer, sizeof(buffer))) < 0){
+		printf("read error");
+		exit(EXIT_FAILURE);
+	}
+    // printf("reading %s\n",buffer);
+	memcpy(buf, buffer, size);
+    return val;
+}
+```
+Apabila server mengirimkan "login_success", maka "login success\n" akan ditampilkan, lalu case 3 pada `main` akan dijalankan:
+```
+case 3:
+            render_menu2(curscene);
+            break;
+```
+Apabila bukan, "login failed\n" akan ditampilkan, lalu case 0 pada `main` akan kembali dijalankan.\
+`render_menu2` adalah fungsi:
+```
+void render_menu2(scene_data * curscene){
+    char request[2048];
+    printf("1. Find Match\n");
+    printf("2. Logout\n");
+    printf("   Choices : ");
+    scanf("%s",request);
+    if(strcmp(request,"find")==0){
+        *(curscene->scene_state) = 4;
+    }else if(strcmp(request,"logout")==0){
+        sendRequest(*(curscene->socket->server_fd),request,strlen(request),0);
+        *(curscene->scene_state) = 0;
+    }
+}
+```
+yang akan menampilkan tampilan berikut:
+[Gamber]
+Pengguna dapat menginputkan "find" atau "logout" untuk merubah case pada `main`. Input selain ke-2 kata tersebut tidak akan merubah case, sehingga menu di atas akan ditampilkan kembali.\
+"logout" akan mengaktifkan case 0 pada `main`, mengembalikan tampilan menjadi menu awal.\
+"find" akan mengaktifkan case 4 pada `main`,
+```
+ case 4:
+            render_waiting(curscene);
+            break;
+```
+di mana:
+```
+void render_waiting(scene_data * curscene){
+    char * request = "find";
+    sendRequest(*(curscene->socket->server_fd),request,strlen(request),0);
+    char buffer[2048] = {0};
+    do{
+        readResponse(*(curscene->socket->server_fd),buffer,sizeof(buffer));
+        printf("Waiting for player....\n");
+        sleep(1);
+    }while(strcmp(buffer,"match_found")!=0);
+    *(curscene->scene_state) = 5;
+}
+```
+client akan mengirim "find" ke server dengan `sendRequest`, dan menunggu server mengirimkan "match_found". Selama menunggu, "Waiting for player....\n" akan terus ditampilkan pada layar.\
+Setelah `readResponse` mendapatkan "match_found", case 5 pada `main akan aktif:
+```
+case 5:
+            render_match(curscene);
+            break;
+```
+di mana:
+```
+void render_match(scene_data * curscene){
+    *(curscene->health) = 100;
+    *(curscene->is_alive) = 1;
+    *(curscene->is_win) = 0;
+    *(curscene->is_over) = 0;
+
+    pthread_t readingthread;
+
+    int iret = pthread_create(&readingthread,NULL,reading_thread,(void*)curscene);
+    if(iret){
+        perror("thread error");
+        exit(EXIT_FAILURE);
+    }
+    char * shoot = "shoot";
+    printf("Game dimulai silahkan tap tap secepat mungkin !!\n");
+    char input;
+
+    while(*(curscene->is_over) == 0){
+        input = getch();
+        if(input == ' '){
+            printf("%d health\n",*(curscene->health));
+            sendRequest(*(curscene->socket->server_fd),shoot,strlen(shoot),0);
+            printf("hit!!\n");
+        }
+    }
+    pthread_join(readingthread,NULL);
+    if(*(curscene->is_win) == 1){
+        printf("Game berakhir kamu menang\n");
+    }else if(*(curscene->is_win) == 0){
+        printf("Game berakhir kamu kalah\n");
+    }
+    char * endgame = "endmatch";
+    sendRequest(*(curscene->socket->server_fd),endgame,strlen(endgame),0);
+    *(curscene->scene_state) = 3;
+}
+```
+`render_match` akan membuat thread baru yang menjalankan
+```
+void* reading_thread(void* args){
+    scene_data * curscene = (scene_data *)args;
+    char buffer[2048] = {0};
+    int win;
+    char * lose = "lose";
+    do{
+        int val = readResponse(*(curscene->socket->server_fd),buffer,sizeof(buffer));
+        if(val == 0)break;
+        if(strcmp(buffer,"damage")==0){
+            *(curscene->health) -= 10;
+            if(*(curscene->health) <= 0){
+                sendRequest(*(curscene->socket->server_fd),lose,strlen(lose),0);
+                *(curscene->is_over) = 1;
+                *(curscene->is_win) = 0;
+                break;
+            }
+            continue;
+        }
+        if(strcmp(buffer,"win") == 0){
+            *(curscene->is_over) = 1;
+            *(curscene->is_win) = 1;
+        }else if(strcmp(buffer,"lose")==0){
+            *(curscene->is_over) = 1;
+            *(curscene->is_win) = 0;
+        }
+    }while(*(curscene->is_over) == 0);
+}
+```
+`reading_thread` bekerja di belakang layar, dan akan melakukan `readResponse` secara terus menerus.\
+apabila server mengirimkan `damage`, maka `reading_thread` akan mengurangi nyawa pemain sebanyak 10. Apabila nyawa telah mencapai 0, "lose" akan dikirimkan ke server melalui `sendRequest`.\
+apabila server mengirimkan "win", maka menang, dan "lose" berarti kalah.\
+`reading_thread` akan berakhir ketika pemain telah diketahui menang ataupun kalah. Hasil permainan dari `reading_thread` akan digunakan di `render_match` setelah dilakukan join.\
+Di `render_match`, "Game dimulai silahkan tap tap secepat mungkin !!\n" akan ditampilkan setelah thread `reading_thread` dibuat.
+Selama `reading_thread` menentukan permainan belum berakhir,
+```
+ while(*(curscene->is_over) == 0){
+        input = getch();
+        if(input == ' '){
+            printf("%d health\n",*(curscene->health));
+            sendRequest(*(curscene->socket->server_fd),shoot,strlen(shoot),0);
+            printf("hit!!\n");
+        }
+    }
+```
+akan bernilai true. Pemain dapat memberi input " " (spasi) untuk menampilkan "%d health\n" dan "hit!!\n" di layar. Ketika pemain memberi input spasi, "shoot" dikirimkan ke server dengan menggunakan `sendRequest`.\
+Ketika permainan berakhir, akan ditampilkan hasil yang berupa: "Game berakhir kamu menang\n" atau "Game berakhir kamu kalah\n" tergantung hasil yang didapat `reading_thread`.\
+"endmatch" akan dikirimkan ke server melalui `sendRequest`, dan case 3 akan kembali diaktifkan.
+[Gambar]
 
 Soal 3
 
