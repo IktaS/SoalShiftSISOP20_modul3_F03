@@ -1923,6 +1923,11 @@ int is_regular_file( char *path)
     return S_ISREG(path_stat.st_mode);
 }
 ```
+Berikut adalah ilustrasi program bekerja::\
+Sebelum:
+![1](https://github.com/IktaS/SoalShiftSISOP20_modul3_F03/blob/master/soal3/3-bintangblm.png)
+Sesudah:
+![3](https://github.com/IktaS/SoalShiftSISOP20_modul3_F03/blob/master/soal3/3-bintangsdh.png)
 Apabila program diberi argumen tambahan -d, maka:
 ```
 else if(strcmp(argv[1],"-d")==0){
@@ -2294,3 +2299,10 @@ int main() {
 	return 0;
 }
 ```
+![earfg](https://github.com/IktaS/SoalShiftSISOP20_modul3_F03/blob/master/soal4/4-ALL.png)
+
+# Kendala
+Kendala yang dialami selama pengerjaan:
+1) Pada soal nomor 3, program yang dibuat pada awalnya tidak dapat memindahkan file berekstensi * . Permasalahan ini telah terselesaikan sewaktu revisi.
+2) Banyaknya thread/fungsi/istilah baru yang digunakan pada beberapa soal membuat pengerjaan sedikit terhambat
+3) Belum terbiasa dengan IPC, sehingga terdapat kesulitan menghubungkan proses.
