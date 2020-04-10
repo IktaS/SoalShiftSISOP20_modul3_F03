@@ -1657,14 +1657,17 @@ Ketika permainan berakhir, akan ditampilkan hasil yang berupa: "Game berakhir ka
 "endmatch" akan dikirimkan ke server melalui `sendRequest`, dan case 3 akan kembali diaktifkan.
 [Gambar]
 
-Soal 3
+# Soal 3
 
-Pada nomor 3 diminta untuk membuat sebuah program yang dapat mengkategorikan file berdasarkan ekstensinya dan memindahkan file-file tersebut sesuai ekstesi ke dalam folder.
+Pada nomor 3 diminta untuk membuat sebuah program yang dapat mengkategorikan file berdasarkan ekstensinya dan memindahkan file-file tersebut sesuai ekstesi ke dalam folder.\
+Program dapat dieksekusi dengan menambahkan satu dari 3 jenis argumen, "-f", "*", dan "-d"
 Berikut adalah fungsi main:
 ```
 int main(int argc, char * argv[]){
-    char curDir[PATH_MAX+1];
+    char curDir[PATH_MAX + PATH_MAX];
     getcwd(curDir,sizeof(curDir));
+    pthread_mutex_init(&bufferlock,NULL);
+
     // return 0;
     if(strcmp(argv[1],"-f")==0){
         pthread_t copy_thread[argc];
@@ -1676,6 +1679,8 @@ int main(int argc, char * argv[]){
             strcpy(copy,argv[i]);
             filenow->filename = copy;
             // printf("%s\n",get_filename_ext(filenow->filename));
+
+
             int iret = pthread_create(&copy_thread[i],NULL,checkFolderAndCopy,(void*)filenow);
             if(iret){
                 perror("thread1");
@@ -1691,75 +1696,76 @@ int main(int argc, char * argv[]){
         struct dirent *dir;
         d = opendir(".");
         if (d){
-            char buffer[PATH_MAX +1];
+            char buffer[PATH_MAX + PATH_MAX];
             memset(buffer,0,sizeof(buffer));
             while ((dir = readdir(d)) != NULL){
                 if(is_regular_file(dir->d_name)){
-                    realpath(dir->d_name,buffer);
-                    if(strcmp(curDir,buffer)== 0)continue;
                     count++;
-                }else{
                 }
             }
             closedir(d);
         }
+
         pthread_t copy_thread[count];
         int i=0;
         d = opendir(".");
         if (d){
-            char buffer[PATH_MAX +1];
+            char buffer[PATH_MAX + PATH_MAX];
             memset(buffer,0,sizeof(buffer));
             while ((dir = readdir(d)) != NULL){
                 if(is_regular_file(dir->d_name)){
                     realpath(dir->d_name,buffer);
-                    if(strcmp(curDir,buffer)== 0)continue;
+
                     file_t * filenow = (file_t*)malloc(sizeof(file_t));
                     filenow->curDir = curDir;
-                    char * copy = (char*)malloc(sizeof(char)*strlen(buffer));
-                    memset(copy,0,sizeof(char)*strlen(argv[i]));
+                    char * copy = (char*)malloc(sizeof(char)* (PATH_MAX + PATH_MAX));
+                    memset(copy,0,sizeof(char)* (PATH_MAX + PATH_MAX));
                     strcpy(copy,buffer);
                     filenow->filename = copy;
+
                     int iret = pthread_create(&copy_thread[i],NULL,checkFolderAndCopy,(void*)filenow);
                     if(iret){
                         perror("thread1");
                         exit(EXIT_FAILURE);
                     }
                     i++;
-                }else{
                 }
             }
             closedir(d);
         }
-        for(i=0;i<count;i++){
-            pthread_join(copy_thread[i],NULL);
+        for(int j=0;j<count;j++){
+            pthread_join(copy_thread[j],NULL);
         }
     }else if(strcmp(argv[1],"-d")==0){
+        chdir(argv[2]);
         int count=0;
         DIR *d;
         struct dirent *dir;
-        d = opendir(argv[2]);
+        d = opendir(".");
         if (d){
             while ((dir = readdir(d)) != NULL){
                 if(is_regular_file(dir->d_name)){
                     count++;
-                }else{
                 }
             }
             closedir(d);
         }
+
         pthread_t copy_thread[count];
         int i=0;
-        d = opendir(argv[2]);
+        d = opendir(".");
         if (d){
-            char buffer[PATH_MAX +1];
+            char buffer[PATH_MAX + PATH_MAX];
             memset(buffer,0,sizeof(buffer));
             while ((dir = readdir(d)) != NULL){
                 if(is_regular_file(dir->d_name)){
                     realpath(dir->d_name,buffer);
+
+
                     file_t * filenow = (file_t*)malloc(sizeof(file_t));
                     filenow->curDir = curDir;
-                    char * copy = (char*)malloc(sizeof(char)*strlen(buffer));
-                    memset(copy,0,sizeof(char)*strlen(buffer));
+                    char * copy = (char*)malloc(sizeof(char)* (PATH_MAX + PATH_MAX));
+                    memset(copy,0,sizeof(char)* (PATH_MAX + PATH_MAX));
                     strcpy(copy,buffer);
                     filenow->filename = copy;
                     int iret = pthread_create(&copy_thread[i],NULL,checkFolderAndCopy,(void*)filenow);
@@ -1767,25 +1773,207 @@ int main(int argc, char * argv[]){
                         perror("thread1");
                         exit(EXIT_FAILURE);
                     }
-                }else{
                 }
             }
             closedir(d);
         }
-        for(i=0;i<count;i++){
-            pthread_join(copy_thread[i],NULL);
+        for(int j=0;j<count;j++){
+            pthread_join(copy_thread[j],NULL);
         }
     }else{
         return 0;
     }
 }
 ```
-Akan tetapi, untuk program Soal nomor 3 ini masih memiliki kelemahan tidak dapat menangani karakter khusus seperti *
+`if(strcmp(argv[1],"-f")==0)` , `else if(strcmp(argv[1],"*")==0)` , dan `else if(strcmp(argv[1],"-d")==0)` digunakan untuk mengecek jenis argumen tambahan yang diberikan.\
+Apabila diberi argumen tambahan -f, maka:
+```
+if(strcmp(argv[1],"-f")==0){
+        pthread_t copy_thread[argc];
+        for(int i=2;i<argc;i++){
+            file_t * filenow = (file_t*)malloc(sizeof(file_t));
+            filenow->curDir = curDir;
+            char * copy = (char*)malloc(sizeof(char)*strlen(argv[i]));
+            memset(copy,0,sizeof(char)*strlen(argv[i]));
+            strcpy(copy,argv[i]);
+            filenow->filename = copy;
+            // printf("%s\n",get_filename_ext(filenow->filename));
 
-Soal 4
 
-Pada soal 4, diminta untuk membuat 3 buah program yang dapat menjalankan fungsi sebagai berikut:\
-a) Program 4a 
+            int iret = pthread_create(&copy_thread[i],NULL,checkFolderAndCopy,(void*)filenow);
+            if(iret){
+                perror("thread1");
+                exit(EXIT_FAILURE);
+            }
+        }
+        for(int i=2;i<argc;i++){
+            pthread_join(copy_thread[i],NULL);
+        }
+```
+akan dijalankan.\
+Program akan membuat thread yang akan menjalankan `checkFolderAndCopy`:
+```
+void* checkFolderAndCopy(void* args){
+    // printf("enter\n");
+    file_t * filenow = (file_t*)args;
+    char * extensionName = get_filename_ext(filenow->filename);
+    char * pathname = (char*)malloc(sizeof(char) * (PATH_MAX + PATH_MAX));
+    memset(pathname,0,sizeof(char) * (PATH_MAX + PATH_MAX));
+    strcpy(pathname,filenow->curDir);
+    strcat(pathname,"/");
+    strcat(pathname,extensionName);
+    // printf("making directory...%s\n",pathname);
+    mkdir(pathname,0777);
+    // int val = mkdir(pathname,0777);
+    // if(val == EEXIST){
+    //     printf("Directory made!\n");
+    // }
+    pthread_mutex_lock(&bufferlock);
+    strcat(pathname,"/");
+    char buffer[PATH_MAX + PATH_MAX];
+    memset(buffer,0,sizeof(buffer));
+    strcpy(buffer,pathname);
+    strcat(buffer,basename(filenow->filename));
+    // printf("moving %s to %s\n",filenow->filename,buffer);
+    rename(filenow->filename,buffer);
+    pthread_mutex_unlock(&bufferlock);
+    // remove(filenow->filename);
+}
+```
+dengan fungsi `get_filename_ext`:
+```
+char * get_filename_ext(char *filename) {
+    char * extname = (char*)malloc(sizeof(char)* (PATH_MAX + PATH_MAX));
+    memset(extname,0,sizeof(char)* (PATH_MAX + PATH_MAX));
+    char *dot = strrchr(filename, '.');
+    if(!dot || dot == filename){
+        strcpy(extname,"Unknown");
+        return extname;
+    }
+    // if(strcmp(dot+1,"*")==0){
+    //     strcpy(extname,"\\");
+    //     strcat(extname,dot+1);
+    //     tolowerstr(extname);
+    //     return extname;
+    // }
+    // strcpy(extname,"'");
+    strcpy(extname,dot+1);
+    // strcat(extname,"'");
+    tolowerstr(extname);
+    // printf("extension : %s\n",extname);
+    return extname;
+}
+```
+Apabila program diberi argumen tambahan *, maka:
+```
+else if(strcmp(argv[1],"*")==0){
+        int count=0;
+        DIR *d;
+        struct dirent *dir;
+        d = opendir(".");
+        if (d){
+            char buffer[PATH_MAX + PATH_MAX];
+            memset(buffer,0,sizeof(buffer));
+            while ((dir = readdir(d)) != NULL){
+                if(is_regular_file(dir->d_name)){
+                    count++;
+                }
+            }
+            closedir(d);
+        }
+
+        pthread_t copy_thread[count];
+        int i=0;
+        d = opendir(".");
+        if (d){
+            char buffer[PATH_MAX + PATH_MAX];
+            memset(buffer,0,sizeof(buffer));
+            while ((dir = readdir(d)) != NULL){
+                if(is_regular_file(dir->d_name)){
+                    realpath(dir->d_name,buffer);
+
+                    file_t * filenow = (file_t*)malloc(sizeof(file_t));
+                    filenow->curDir = curDir;
+                    char * copy = (char*)malloc(sizeof(char)* (PATH_MAX + PATH_MAX));
+                    memset(copy,0,sizeof(char)* (PATH_MAX + PATH_MAX));
+                    strcpy(copy,buffer);
+                    filenow->filename = copy;
+
+                    int iret = pthread_create(&copy_thread[i],NULL,checkFolderAndCopy,(void*)filenow);
+                    if(iret){
+                        perror("thread1");
+                        exit(EXIT_FAILURE);
+                    }
+                    i++;
+                }
+            }
+            closedir(d);
+        }
+```
+akan dijalankan.\
+Fungsi `is_regular_file` adalah:
+```
+int is_regular_file( char *path)
+{
+    struct stat path_stat;
+    stat(path, &path_stat);
+    return S_ISREG(path_stat.st_mode);
+}
+```
+Apabila program diberi argumen tambahan -d, maka:
+```
+else if(strcmp(argv[1],"-d")==0){
+        chdir(argv[2]);
+        int count=0;
+        DIR *d;
+        struct dirent *dir;
+        d = opendir(".");
+        if (d){
+            while ((dir = readdir(d)) != NULL){
+                if(is_regular_file(dir->d_name)){
+                    count++;
+                }
+            }
+            closedir(d);
+        }
+
+        pthread_t copy_thread[count];
+        int i=0;
+        d = opendir(".");
+        if (d){
+            char buffer[PATH_MAX + PATH_MAX];
+            memset(buffer,0,sizeof(buffer));
+            while ((dir = readdir(d)) != NULL){
+                if(is_regular_file(dir->d_name)){
+                    realpath(dir->d_name,buffer);
+
+
+                    file_t * filenow = (file_t*)malloc(sizeof(file_t));
+                    filenow->curDir = curDir;
+                    char * copy = (char*)malloc(sizeof(char)* (PATH_MAX + PATH_MAX));
+                    memset(copy,0,sizeof(char)* (PATH_MAX + PATH_MAX));
+                    strcpy(copy,buffer);
+                    filenow->filename = copy;
+                    int iret = pthread_create(&copy_thread[i],NULL,checkFolderAndCopy,(void*)filenow);
+                    if(iret){
+                        perror("thread1");
+                        exit(EXIT_FAILURE);
+                    }
+                }
+            }
+            closedir(d);
+        }
+        for(int j=0;j<count;j++){
+            pthread_join(copy_thread[j],NULL);
+        }
+```
+akan dijalankan.
+
+# Soal 4
+
+Pada soal 4, diminta untuk membuat 3 buah program yang dapat menjalankan fungsi sebagai berikut:
+
+# a) Program 4a 
 berfungsi untuk melakukan perkalian matrix dan menampilkan hasil yang didapatkan
 ```
 typedef struct mat{
@@ -1800,6 +1988,9 @@ typedef struct mat{
     pthread_mutex_t ilock;
     int *i;
 }thread_items;
+
+
+
 void* multi(void* args)
 {
     thread_items* threadstuff = (thread_items*)args;
@@ -1819,11 +2010,13 @@ void* multi(void* args)
     }
 \
 }
+
 int main(void)
 {
     thread_items * threadstuff = (thread_items *)malloc(sizeof(thread_items));
     threadstuff->rowA = 4;
     threadstuff->colA = 2;
+
     threadstuff->matA[0][0] = 1;
 	threadstuff->matA[0][1] = 2;
 	threadstuff->matA[1][0] = 3;
@@ -1832,8 +2025,10 @@ int main(void)
 	threadstuff->matA[2][1] = 6;
 	threadstuff->matA[3][0] = 7;
 	threadstuff->matA[3][1] = 8;
+
     threadstuff->rowB = 2;
     threadstuff->colB = 5;
+
     threadstuff->matB[0][0] = 1;
 	threadstuff->matB[0][1] = 2;
 	threadstuff->matB[0][2] = 3;
@@ -1844,18 +2039,25 @@ int main(void)
 	threadstuff->matB[1][2] = 8;
 	threadstuff->matB[1][3] = 9;
 	threadstuff->matB[1][4] = 10;
+
     threadstuff->matC[0][0] = 0;
+
     int init=0;
     threadstuff->i = &init;
     pthread_mutex_init(&(threadstuff->ilock),NULL);
     pthread_mutex_init(&(threadstuff->matClock),NULL);
+
+
     pthread_t threads[5];
+
     for (int i = 0; i < 4; i++){
         pthread_create(&threads[i], NULL, multi, (void*)threadstuff);
     }
+
     for (int i = 0; i < 4; i++) {
         pthread_join(threads[i], NULL);
     }
+
     // return 0;
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 5; j++)  {
@@ -1863,6 +2065,7 @@ int main(void)
         }
         printf("\n");
     }
+
     int (*temp)[5];
     key_t key = 9876;
     int shmid = shmget(key, (sizeof(int[5][5])), IPC_CREAT | 0666);
@@ -1884,7 +2087,7 @@ int main(void)
 ```
 angka yang hendak dihitung beserta ukuran matriks sudah berada di dalam program, sehingga apabila ingin merubah angka yang dihitung, bagian:
 ```
-    threadstuff->matA[0][0] = 1;
+        threadstuff->matA[0][0] = 1;
 	threadstuff->matA[0][1] = 2;
 	threadstuff->matA[1][0] = 3;
 	threadstuff->matA[1][1] = 4;
@@ -1895,7 +2098,7 @@ angka yang hendak dihitung beserta ukuran matriks sudah berada di dalam program,
  ```
  dan
  ```
- threadstuff->matB[0][0] = 1;
+ 	threadstuff->matB[0][0] = 1;
 	threadstuff->matB[0][1] = 2;
 	threadstuff->matB[0][2] = 3;
 	threadstuff->matB[0][3] = 4;
@@ -1907,9 +2110,106 @@ angka yang hendak dihitung beserta ukuran matriks sudah berada di dalam program,
 	threadstuff->matB[1][4] = 10;
 ```
 perlu diubah.\
+Fungsi `main` akan melakukan rekursi untuk membuat thread yang melakukan fungsi `multi`, dan hasil perhitungan disimpan ke threadstuff->matC[][]\
+Hasil perhitungan ditampilkan dengan:
+```
+for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 5; j++)  {
+            printf("%d ", threadstuff->matC[i][j]);
+        }
+        printf("\n");
+    }
+```
 
-b) Program 4b
-yang berfungsi mengambil hasil perkalian program 4a dan menampilkannya, lalu menghitung dan menampilkan hasil penjumlahan dari n sampai 1 dari tiap angka pada matriks
+# b) Program 4b
+Berfungsi mengambil hasil perkalian program 4a dan menampilkannya, lalu menghitung dan menampilkan hasil penjumlahan dari n sampai 1 dari tiap angka pada matriks
+```
+typedef struct mat{
+    int * matinit;
+    unsigned int mathasil[20];
+    pthread_mutex_t ilock;
+    pthread_mutex_t matlock;
+    int * i;
+}thread_items;
+
+
+
+void* tambah(void* args)
+{
+    thread_items * items = (thread_items*)args;
+    pthread_mutex_lock(&(items->ilock));
+    int temp = *(items->i);
+    *(items->i) += 1;
+    pthread_mutex_unlock(&(items->ilock));
+    int sum = 0;
+    for(int j=0;j<=items->matinit[temp];j++){
+        sum += j;
+    }
+    pthread_mutex_lock(&(items->matlock));
+    items->mathasil[temp] = sum;
+    pthread_mutex_unlock(&(items->matlock));
+}
+
+int main(void)
+{
+    int *mat;
+    key_t key = 9876;
+    int shmid = shmget(key, sizeof(int)*4*5, IPC_CREAT | 0666);
+    mat = (int *)shmat(shmid, NULL, 0);
+
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 5; j++)  {
+            printf("%d ",mat[i*5+j]);
+        }
+        printf("\n");
+    }
+    pthread_t threads[20];
+
+    thread_items * items = (thread_items*) malloc(sizeof(thread_items));
+    items->matinit = mat;
+    int i =0;
+    items->i = &i;
+    pthread_mutex_init(&(items->ilock),NULL);
+    pthread_mutex_init(&(items->matlock),NULL);
+
+
+    for (int i = 0; i < 20; i++){
+        pthread_create(&threads[i], NULL, tambah, (void*)items);
+    }
+
+    for (int i = 0; i < 20; i++) {
+        pthread_join(threads[i], NULL);
+    }
+
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 5; j++)  {
+            printf("%d ",items->mathasil[i*5+j]);
+        }
+        printf("\n");
+    }
+
+    shmdt(mat);
+    shmctl(shmid, IPC_RMID, NULL);
+
+}
+```
+Pada `main`,vbagian:
+```
+for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 5; j++)  {
+            printf("%d ",mat[i*5+j]);
+        }
+        printf("\n");
+    }
+```
+berfungsi untuk menampilkan hasil sebelumnya(soal4a).\
+Karena hasil perkalian matriks pada 4a adalah matriks berukuran 4x5, maka akan dibuat 20 thread sesuai 
+```
+for (int i = 0; i < 20; i++){
+        pthread_create(&threads[i], NULL, tambah, (void*)items);
+    }
+```
+untuk melakukan fungsi `tambah`:
 ```
 void* tambah(void* args)
 {
@@ -1919,59 +2219,52 @@ void* tambah(void* args)
     *(items->i) += 1;
     pthread_mutex_unlock(&(items->ilock));
     int sum = 0;
-    for(int j=0;j<items->matinit[temp];j++){
+    for(int j=0;j<=items->matinit[temp];j++){
         sum += j;
     }
     pthread_mutex_lock(&(items->matlock));
     items->mathasil[temp] = sum;
     pthread_mutex_unlock(&(items->matlock));
 }
-int main(void)
-{
-    int *mat;
-    key_t key = 9876;
-    int shmid = shmget(key, sizeof(int)*4*5, IPC_CREAT | 0666);
-    mat = (int *)shmat(shmid, NULL, 0);
-    pthread_t threads[20];
-    thread_items * items = (thread_items*) malloc(sizeof(thread_items));
-    items->matinit = mat;
-    int i =0;
-    items->i = &i;
-    pthread_mutex_init(&(items->ilock),NULL);
-    pthread_mutex_init(&(items->matlock),NULL);
-    for (int i = 0; i < 20; i++){
-        pthread_create(&threads[i], NULL, tambah, (void*)items);
-    }
-    for (int i = 0; i < 20; i++) {
+```
+yang akan menambahkan mulai dari angka 0 sampai n untuk tiap angka dalam matriks.\
+Dilakukan fungsi join sesuai:
+```
+for (int i = 0; i < 20; i++) {
         pthread_join(threads[i], NULL);
     }
-    for (int i = 0; i < 4; i++) { 
+```
+supaya perhitungan dipastikan selesai sebelum `main` berakhir, lalu hasil ditampilkan dengan:
+```
+for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 5; j++)  {
-            printf("%d ",items->mathasil[i+j]);
+            printf("%d ",items->mathasil[i*5+j]);
         }
         printf("\n");
-    } 
-    shmdt(mat);
-    shmctl(shmid, IPC_RMID, NULL);
-}
+    }
 ```
 
-c) Program 4c
+# c) Program 4c
 yang mengetahui jumlah file dan folder di direktori saat ini dengan command "ls | wc -l"
 ```
 #define die(e) do { fprintf(stderr, "%s\n", e); exit(EXIT_FAILURE); } while (0);
+
 void ForkAndLSAndPipeOutput(int *linkout){
 	pid_t pid;
 	int status;
+
 	pid = fork();
 	if(pid < 0){
 		die("forkandls");
 	}
+
 	if(pid == 0){
+
 		//make the output pipes to linkout
 		close(linkout[0]);
 		dup2(linkout[1],STDOUT_FILENO);
 		close(linkout[1]);
+
 		char * argv[] = {"ls",NULL};
 		execv("/usr/bin/ls",argv);
 	}else{
@@ -1979,17 +2272,21 @@ void ForkAndLSAndPipeOutput(int *linkout){
 		close(linkout[1]);
 		dup2(linkout[0],STDIN_FILENO);
 		close(linkout[0]);
+
 		char * argv[] = {"wc","-l", NULL};
 		execv("/usr/bin/wc",argv);
 		return;
 	}
 }
+
 int main() {
 	int link1[2];
 	pid_t pid;
 	char out[4096];
+
 	if (pipe(link1)<0)
 		die("pipe1");
+
 	ForkAndLSAndPipeOutput(link1);
 	return 0;
 }
