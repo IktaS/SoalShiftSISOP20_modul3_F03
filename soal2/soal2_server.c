@@ -248,12 +248,9 @@ void * player_handler(void* args){
             int auth = 0;
             FILE * temp = fopen(FILE_AKUN,"a+");
             while(fscanf(temp,"%s | %s",user_buf,pass_buf) != EOF){
-                strcat(buffer,user_buf);
-                strcat(buffer," | ");
-                strcat(buffer,pass_buf);
-                strcat(buffer,"\n");
+                printf("%s | %s\n",user_buf,pass_buf);
             }
-            sendResponse(player->socket_id,buffer,2048,0);
+            // sendResponse(player->socket_id,buffer,2048,0);
         }
 
         if(strcmp(buffer,"find")==0 && *(player->login) == 1 && *(player->in_match) == 0){
