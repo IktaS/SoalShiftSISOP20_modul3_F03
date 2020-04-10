@@ -5,11 +5,12 @@
   Pada soal 1 diminta untuk membuat sebuah permainan berbasis teks yang mirip dengan PokemonGo. Permainan terdiri dari 2 buah code, yaitu soal1_traizone.c dan soal1_pokezone.c.
 
 # a) soal1_traizone.c
-     Link menuju kode: https://github.com/IktaS/SoalShiftSISOP20_modul3_F03/blob/master/soal1/soal1_traizone.c
-     Pada soal1_traizone.c, diminta untuk membuat 2 buah mode: normal mode dan capture mode/
+   Link menuju kode: https://github.com/IktaS/SoalShiftSISOP20_modul3_F03/blob/master/soal1/soal1_traizone.c
+   Pada soal1_traizone.c, diminta untuk membuat 2 buah mode: normal mode dan capture mode/
 
 # Normal mode / main menu
-     Berikut adalah fungsi main dari soal1_traizone:
+
+ Berikut adalah fungsi main dari soal1_traizone:
 
     int main(int argc, char const *argv[]){
     srand(time(NULL));
@@ -139,8 +140,8 @@ void render_mainmenu(pokezone_scene * curscene){
     printf("3. Shop\n");
 }
 ```
-yang akan menampilkan pilihan untuk: 1) Mencari/berhenti mencari pokemon, 2) Pokedex, dan 3) Shop.
-Di saat yang bersaman, fungsi main akan tetap berjalan dan akan merubah tampilan berdasarkan input yang dimasukkan, karena secara default fungsi `input_mainmenu(curscene, input)` berjalan bersamaan dengan fungsi `render_mainmenu(curscene)` tadi.
+yang akan menampilkan pilihan untuk: 1) Mencari/berhenti mencari pokemon, 2) Pokedex, dan 3) Shop.\
+Di saat yang bersaman, fungsi main akan tetap berjalan dan akan merubah tampilan berdasarkan input yang dimasukkan, karena secara default fungsi `input_mainmenu(curscene, input)` berjalan bersamaan dengan fungsi `render_mainmenu(curscene)` tadi.\
 `input_mainmenu(curscene)` sendiri berisi:
 ```
 void input_mainmenu(pokezone_scene * curscene, int input){
@@ -208,8 +209,8 @@ void * cari_pokemon(void* args){
     }
 }
 ```
-yang berfungsi mencari pokemon tiap 10 detik di belakang layar dengan cara menggunakan fungsi `rand()` untuk membuat angka random, yang akan dicocokkan dengan parameter yang diinginkan, sementara `render_mainmenu` akan menampilkan "1. Berhenti mencari" alih-alih "1. Cari Pokemon" selama fungsi `cari_pokemon` masih bekerja.
-Apabila pada kondisi ini pengguna memberi input "1" lagi, maka pokemon akan berhenti dicari, dan tampilan akan kembali seperti semula.
+yang berfungsi mencari pokemon tiap 10 detik di belakang layar dengan cara menggunakan fungsi `rand()` untuk membuat angka random, yang akan dicocokkan dengan parameter yang diinginkan, sementara `render_mainmenu` akan menampilkan "1. Berhenti mencari" alih-alih "1. Cari Pokemon" selama fungsi `cari_pokemon` masih bekerja.\
+Apabila pada kondisi ini pengguna memberi input "1" lagi, maka pokemon akan berhenti dicari, dan tampilan akan kembali seperti semula.\
 Apabila `cari_pokemon` berhasil menemukan pokemon, maka case 5 pada `render_scene` akan aktif dan menjalankan:
 ```
 case 5:
@@ -253,7 +254,7 @@ void input_goto(pokezone_scene * curscene, int input){
 ```
 yang berfungsi mengolah input pada menu ini:
 [FOtO]
-Apabila pengguna memberi input "2", maka tampilan akan kembali seperti semula, seperti sebelum pokemon dicari.
+Apabila pengguna memberi input "2", maka tampilan akan kembali seperti semula, seperti sebelum pokemon dicari.\
 Apabila pengguna memberi input "1", maka case 1 pada `render_scene` akan aktif dan menjalankan `render_capturemode(curscene)`
 ```
 case 1:
@@ -286,7 +287,7 @@ void render_capturemode(pokezone_scene * curscene){
 ```
 yang akan menampilkan tampilan 
 [MASUKIN GAMBAR]
-sekaligus mengacak kemungkinan apakah pokemon akan kabur dengan `int rando`. Apabila hasil yang diberikan memenuhi parameter, maka pokemon akan kabur, dan pemain akan dikembalikan ke tampilan semua.
+sekaligus mengacak kemungkinan apakah pokemon akan kabur dengan `int rando`. Apabila hasil yang diberikan memenuhi parameter, maka pokemon akan kabur, dan pemain akan dikembalikan ke tampilan semua.\
 Selama pokemon masih belum kabur, case 1 pada fungsi main akan berjalan di belakang layar dan menjalankan
 ```
 case 1:
@@ -341,7 +342,7 @@ void* calculate_escape_rate(void* args){
     }
 }
 ```
-yang akan menghitung peluang pokemon kabur.
+yang akan menghitung peluang pokemon kabur.\
 Pemain dapat memberi input "1" untuk mengaktifkan case 1 `input_capturemode` yang akan menjalankan:
 ```
 void tangkap_action(pokezone_scene * curscene){
@@ -410,7 +411,7 @@ void* calculate_ap_pokemon(void* args){
     }
 }
 ```
-yang berfungsi menghitung ap pokemon di belakang layar. Tiap 10 detik, ap dari semua pokemon akan berkurang sebanyak 10. Apabila ap pokemon mencapai 0, maka akan dilakukan perhitungan untuk menentukan apakah pokemon tersebut akan dihilangkan dari kepemilikan pemain, atau justru pokemon tersebut akan mendapatkan 50 ap.
+yang berfungsi menghitung ap pokemon di belakang layar. Tiap 10 detik, ap dari semua pokemon akan berkurang sebanyak 10. Apabila ap pokemon mencapai 0, maka akan dilakukan perhitungan untuk menentukan apakah pokemon tersebut akan dihilangkan dari kepemilikan pemain, atau justru pokemon tersebut akan mendapatkan 50 ap.\
 Apabila pemain memberi input "2" pada capturemode, maka case 2 akan aktif dan menjalankan:
 ```
 case 2:
@@ -453,8 +454,8 @@ void *lull_powder(void* args){
     pthread_mutex_unlock(&(curscene->lull_lock));
 }
 ```
-yang berfungsi menghitung lamanya lullaby powder aktif.
-Selama lullaby powder aktif, pemain akan mendapatkan khasiat yang dapat dirasakan pada capturemode seperti berikut:
+yang berfungsi menghitung lamanya lullaby powder aktif.\
+Selama lullaby powder aktif, pemain akan mendapatkan khasiat yang dapat dirasakan pada capturemode seperti berikut:\
 Pada `tangkap_action`, peluang tertangkap bertambah
 ```
 ...
@@ -484,7 +485,7 @@ case 3:
 yang akan mematikan efek lullaby powder(jika ada), dan mengembalikan pemain ke main menu.
 
 # Pokedex
-Apabila pada main menu pengguna memasukkan input "2", maka case 2 akan aktif pada `main` dan `render_scene`.
+Apabila pada main menu pengguna memasukkan input "2", maka case 2 akan aktif pada `main` dan `render_scene`.\
 Pada `main`:
 ```
  case 2:
@@ -512,7 +513,7 @@ void input_pokedex(pokezone_scene * curscene, int input){
     }
 }
 ```
-yang berfungsi memproses input dari pengguna pada menu pokedex.
+yang berfungsi memproses input dari pengguna pada menu pokedex.\
 Pada `render_scene`, case 2 adalah:
 ```
  case 2:
@@ -536,7 +537,7 @@ yang berfungsi memberi tampilan pada menu pokedex menjadi:
 [GAMBER]
 Apabila pengguna sudah menangkap pokemon, maka pokemon yang tersedia akan ditampilkan juga.
 [Gambar]
-Sesuai tampilan, pengguna dapat memberi input "1","2", atau "3", di mana nilai dari input tersebut akan memicu case sesuai input pada `input_pokedex`
+Sesuai tampilan, pengguna dapat memberi input "1","2", atau "3", di mana nilai dari input tersebut akan memicu case sesuai input pada `input_pokedex`.\
 Pada case 1, fungsi `give_berry` akan dijalankan, di mana `give_berry` adalah:
 ```
 void give_berry(pokezone_scene * curscene){
@@ -551,7 +552,7 @@ void give_berry(pokezone_scene * curscene){
 ```
 `give_berry` akan mengecek berry milik pemain dan tidak melakukan apa-apa apabila pemain tidak mempunya cukup berry(0). Kebalikannya, apabila berry yang pemain miliki mencukupi, semua pokemon milik pemain akan mendapatkan 10 ap, dan jumlah berry milik pemain akan berkurang sebanyak 1.
 [before after]
-Pada case 2, sesuai dengan `*(curscene->state_menu) = 4;`, maka case 4 untuk `main` dan `render_scene` akan aktif.
+Pada case 2, sesuai dengan `*(curscene->state_menu) = 4;`, maka case 4 untuk `main` dan `render_scene` akan aktif.\
 Pada `main`:
 ```
 case 4:
@@ -569,7 +570,7 @@ void input_lepas(pokezone_scene * curscene, int input){
     pthread_mutex_unlock(&(curscene->state_lock));
 }
 ```
-yang berfungsi memproses input dari pengguna pada menu tersebut.
+yang berfungsi memproses input dari pengguna pada menu tersebut.\
 Pada `render_scene`:
 ```
 case 4:
@@ -588,11 +589,11 @@ void render_lepas(pokezone_scene * curscene){
 ```
 yang berfungsi memberi tampilan pada menu tersebut:
 [Gambar]
-Pada kondisi ini, sesuai dengan `input_lepas`, pemain dapat memasukkan nomor urutan pokemon yang ingin dilepas sekaligus mendapatkan pokedollar. Setelah itu, tampilan akan kembali ke menu pokedex.
+Pada kondisi ini, sesuai dengan `input_lepas`, pemain dapat memasukkan nomor urutan pokemon yang ingin dilepas sekaligus mendapatkan pokedollar. Setelah itu, tampilan akan kembali ke menu pokedex.\
 Pada case 3, sesuai dengan `*(curscene->state_menu) = 0;`, maka baik `main` maupun `render_scene` akan kembali ke case semula(0), yaitu main menu.
 
 # Shop
-Apabila pemain memasukkan input "3" pada main menu, case 3 dari `int` dan `render_scene` akan dijalankan:
+Apabila pemain memasukkan input "3" pada main menu, case 3 dari `int` dan `render_scene` akan dijalankan:\
 Pada `main`:
 ```
 case 3:
@@ -624,7 +625,7 @@ void input_shop(pokezone_scene * curscene, int input){
     }
 }
 ```
-berfungsi mengolah input pemain pada menu shop.
+berfungsi mengolah input pemain pada menu shop.\
 Pada `render_scene`:
 ```
 case 3:
@@ -642,8 +643,8 @@ void render_shop(pokezone_scene * curscene){
     printf("4. To Mainmenu\n");
 }
 ```
-berfungsi memberi tampilan pada menu shop, yang akan menampilkan pokedollar pemain dan item yang dapat dipilih.
-Pada menu shop, pengguna dapat memasukkan input "1","2","3", atau "4", yang akan menjalankan case dengan kode serupa pada `input_shop`.
+berfungsi memberi tampilan pada menu shop, yang akan menampilkan pokedollar pemain dan item yang dapat dipilih.\
+Pada menu shop, pengguna dapat memasukkan input "1","2","3", atau "4", yang akan menjalankan case dengan kode serupa pada `input_shop`.\
 Pada case 1, `buy_lullaby` adalah:
 ```
 void buy_lullaby(pokezone_scene * curscene){
@@ -654,7 +655,7 @@ void buy_lullaby(pokezone_scene * curscene){
     }
 }
 ```
-yang berfungsi mengecek stok lullaby powder pada shop dan pada player. Tergantung dari hasil pengecekan, fungsi akan melakukan return atau melanjutkan pengecekan selanjutnya terhadap pokedollar pemain. Apabila pokedollar mencukupi, maka lullaby powder milik pemain akan bertambah sebanyak 1, dan pokedollar pemain berkurang sebanyak 60.
+yang berfungsi mengecek stok lullaby powder pada shop dan pada player. Tergantung dari hasil pengecekan, fungsi akan melakukan return atau melanjutkan pengecekan selanjutnya terhadap pokedollar pemain. Apabila pokedollar mencukupi, maka lullaby powder milik pemain akan bertambah sebanyak 1, dan pokedollar pemain berkurang sebanyak 60.\
 Pada case 2, `buy_pokeball` adalah:
 ```
 void buy_pokeball(pokezone_scene * curscene){
@@ -665,7 +666,7 @@ void buy_pokeball(pokezone_scene * curscene){
     }
 }
 ```
-yang melakukan prosedur seperti pada lullaby powder, hanya saja terhadap variabel dan dengan nilai yang berbeda.
+yang melakukan prosedur seperti pada lullaby powder, hanya saja terhadap variabel dan dengan nilai yang berbeda.\
 Pada case 3, `buy_berry` adalah:
 ```
 void buy_berry(pokezone_scene * curscene){
@@ -676,7 +677,7 @@ void buy_berry(pokezone_scene * curscene){
     }
 }
 ```
-yang melakukan prosedur seperti pada lullaby powder dan pokeball, hanya saja terhadap variabel dan dengan nilai yang berbeda.
+yang melakukan prosedur seperti pada lullaby powder dan pokeball, hanya saja terhadap variabel dan dengan nilai yang berbeda.\
 Pada case 4, sesuai dengan `*(curscene->state_menu) = 0;`, maka baik `main` maupun `render_scene` akan kembali ke case semula(0), yaitu main menu.
 
 # b) soal1_pokezone.c
@@ -719,7 +720,7 @@ void forkAndKillAll(){
     }
 }
 ```
-yang akan membunuh semua "soal1_pokezone" dan "soal1_traizone".
+yang akan membunuh semua "soal1_pokezone" dan "soal1_traizone".\
 Berikut adalah isi dari `runserver`:
 ```
 void* runserver(void* args){
@@ -850,7 +851,7 @@ void get_pokemon(pokemon * buffer){
     }
 }
 ```
-yang bertugas menentukan pokemon yang akan muncul beserta atributnya.
+yang bertugas menentukan pokemon yang akan muncul beserta atributnya.\
 dan `shop_api` adalah:
 ```
 void* shop_api(void* args){
@@ -879,7 +880,7 @@ void* shop_api(void* args){
 ```
 yang bertugas menjalankan shop beserta mengatur stocknya tiap 10 detik.
 
-Soal2
+# Soal2
 
 Pada soal 2, diminta untuk membuat text based game dengan 2 program, yaitu server dan player.\
 a) server.c
