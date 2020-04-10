@@ -141,6 +141,7 @@ void render_mainmenu(pokezone_scene * curscene){
 }
 ```
 yang akan menampilkan pilihan untuk: 1) Mencari/berhenti mencari pokemon, 2) Pokedex, dan 3) Shop.\
+![any](https://github.com/IktaS/SoalShiftSISOP20_modul3_F03/blob/master/soal1/trai_Main.png)
 Di saat yang bersaman, fungsi main akan tetap berjalan dan akan merubah tampilan berdasarkan input yang dimasukkan, karena secara default fungsi `input_mainmenu(curscene, input)` berjalan bersamaan dengan fungsi `render_mainmenu(curscene)` tadi.\
 `input_mainmenu(curscene)` sendiri berisi:
 ```
@@ -209,7 +210,8 @@ void * cari_pokemon(void* args){
     }
 }
 ```
-yang berfungsi mencari pokemon tiap 10 detik di belakang layar dengan cara menggunakan fungsi `rand()` untuk membuat angka random, yang akan dicocokkan dengan parameter yang diinginkan, sementara `render_mainmenu` akan menampilkan "1. Berhenti mencari" alih-alih "1. Cari Pokemon" selama fungsi `cari_pokemon` masih bekerja.\
+yang berfungsi mencari pokemon tiap 10 detik di belakang layar dengan cara menggunakan fungsi `rand()` untuk membuat angka random, yang akan dicocokkan dengan parameter yang diinginkan, sementara `render_mainmenu` akan menampilkan "1. Berhenti mencari" alih-alih "1. Cari Pokemon" selama fungsi `cari_pokemon` masih bekerja.
+![otr](https://github.com/IktaS/SoalShiftSISOP20_modul3_F03/blob/master/soal1/trai_Maincari.png)
 Apabila pada kondisi ini pengguna memberi input "1" lagi, maka pokemon akan berhenti dicari, dan tampilan akan kembali seperti semula.\
 Apabila `cari_pokemon` berhasil menemukan pokemon, maka case 5 pada `render_scene` akan aktif dan menjalankan:
 ```
@@ -253,7 +255,7 @@ void input_goto(pokezone_scene * curscene, int input){
 }
 ```
 yang berfungsi mengolah input pada menu ini:
-[FOtO]
+![FOtO](https://github.com/IktaS/SoalShiftSISOP20_modul3_F03/blob/master/soal1/trai_goto.png)
 Apabila pengguna memberi input "2", maka tampilan akan kembali seperti semula, seperti sebelum pokemon dicari.\
 Apabila pengguna memberi input "1", maka case 1 pada `render_scene` akan aktif dan menjalankan `render_capturemode(curscene)`
 ```
@@ -286,7 +288,7 @@ void render_capturemode(pokezone_scene * curscene){
 }
 ```
 yang akan menampilkan tampilan 
-[MASUKIN GAMBAR]
+![MASUKIN GAMBAR](https://github.com/IktaS/SoalShiftSISOP20_modul3_F03/blob/master/soal1/trai_capture.png)
 sekaligus mengacak kemungkinan apakah pokemon akan kabur dengan `int rando`. Apabila hasil yang diberikan memenuhi parameter, maka pokemon akan kabur, dan pemain akan dikembalikan ke tampilan semua.\
 Selama pokemon masih belum kabur, case 1 pada fungsi main akan berjalan di belakang layar dan menjalankan
 ```
@@ -534,9 +536,8 @@ void render_pokedex(pokezone_scene * curscene){
 }
 ```
 yang berfungsi memberi tampilan pada menu pokedex menjadi:
-[GAMBER]
-Apabila pengguna sudah menangkap pokemon, maka pokemon yang tersedia akan ditampilkan juga.
-[Gambar]
+![GAMBER](https://github.com/IktaS/SoalShiftSISOP20_modul3_F03/blob/master/soal1/trai_dex.png)
+Apabila pengguna sudah menangkap pokemon, maka pokemon yang tersedia akan ditampilkan juga.\
 Sesuai tampilan, pengguna dapat memberi input "1","2", atau "3", di mana nilai dari input tersebut akan memicu case sesuai input pada `input_pokedex`.\
 Pada case 1, fungsi `give_berry` akan dijalankan, di mana `give_berry` adalah:
 ```
@@ -550,8 +551,7 @@ void give_berry(pokezone_scene * curscene){
     curscene->player_stock->berry--;
 }
 ```
-`give_berry` akan mengecek berry milik pemain dan tidak melakukan apa-apa apabila pemain tidak mempunya cukup berry(0). Kebalikannya, apabila berry yang pemain miliki mencukupi, semua pokemon milik pemain akan mendapatkan 10 ap, dan jumlah berry milik pemain akan berkurang sebanyak 1.
-[before after]
+`give_berry` akan mengecek berry milik pemain dan tidak melakukan apa-apa apabila pemain tidak mempunya cukup berry(0). Kebalikannya, apabila berry yang pemain miliki mencukupi, semua pokemon milik pemain akan mendapatkan 10 ap, dan jumlah berry milik pemain akan berkurang sebanyak 1.\
 Pada case 2, sesuai dengan `*(curscene->state_menu) = 4;`, maka case 4 untuk `main` dan `render_scene` akan aktif.\
 Pada `main`:
 ```
@@ -588,7 +588,7 @@ void render_lepas(pokezone_scene * curscene){
 }
 ```
 yang berfungsi memberi tampilan pada menu tersebut:
-[Gambar]
+![Gambar](https://github.com/IktaS/SoalShiftSISOP20_modul3_F03/blob/master/soal1/lepas.png)
 Pada kondisi ini, sesuai dengan `input_lepas`, pemain dapat memasukkan nomor urutan pokemon yang ingin dilepas sekaligus mendapatkan pokedollar. Setelah itu, tampilan akan kembali ke menu pokedex.\
 Pada case 3, sesuai dengan `*(curscene->state_menu) = 0;`, maka baik `main` maupun `render_scene` akan kembali ke case semula(0), yaitu main menu.
 
@@ -643,7 +643,8 @@ void render_shop(pokezone_scene * curscene){
     printf("4. To Mainmenu\n");
 }
 ```
-berfungsi memberi tampilan pada menu shop, yang akan menampilkan pokedollar pemain dan item yang dapat dipilih.\
+berfungsi memberi tampilan pada menu shop, yang akan menampilkan pokedollar pemain dan item yang dapat dipilih.
+![gbr](https://github.com/IktaS/SoalShiftSISOP20_modul3_F03/blob/master/soal1/shop.png)
 Pada menu shop, pengguna dapat memasukkan input "1","2","3", atau "4", yang akan menjalankan case dengan kode serupa pada `input_shop`.\
 Pada case 1, `buy_lullaby` adalah:
 ```
