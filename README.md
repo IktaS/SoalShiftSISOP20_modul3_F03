@@ -892,8 +892,6 @@ Di bagian awal terdapat:
 #define FILE_AKUN   "/home/ikta/akun.txt"
 ```
 Bagian ini akan menjadi direktori tempat file akun.txt yang menyimpan akun dibuat. Oleh karena itu nama direktori perlu menyesuaikan masing-masing pengguna. Apabila bagian ini tidak dirubah, maka program tidak akan dapat membuat file akun.txt yang berakibat gagalnya melakukan registrasi dan membuat program server berhenti, kecuali apabila nama dari user adalah "ikta".\
-[gagal]
-[berhasil]
 Server memiliki fungsi main:
 ```
 int main(){
@@ -1029,7 +1027,8 @@ Karena adanya
 ```
 , maka program `main` akan menunggu hingga ke-2 thread selesai dijalankan terlebih dahulu.
 Apabila thread `listen_thread` berhasil dibuat, akan ditampilkan pesan "listen thread on\n". Hal yang sama berlaku untuk `match`, di mana akan ditampilkan pesan "match thread on\n" apabila thread berhasil dibuat.
-`listen_thread` akan menampilkan pesan "listening...\n",lalu "accepting...\n" ketika `listen_thread` siap menerima input.\
+`listen_thread` akan menampilkan pesan "listening...\n",lalu "accepting...\n" ketika `listen_thread` siap menerima input.
+![etc](https://github.com/IktaS/SoalShiftSISOP20_modul3_F03/blob/master/soal2/2_serverawal.png)
 Ketika soal2-client.c dijalankan di terminal lain, `listen_thread` kemudian akan melakukan `printf("got player socket id %d\n",temp_player->socket_id);` apabila berhasil. "making player thread...\n" akan ditampilkan ketika `listen_thread` hendak membuat player thread dengan:
 ```
 void * player_handler(void* args){
@@ -1144,7 +1143,8 @@ void * player_handler(void* args){
     }
 }
 ```
- "player thread made!\n" akan ditampilkan ketika thread selesai dibuat.\
+ "player thread made!\n" akan ditampilkan ketika thread selesai dibuat.
+![we](https://github.com/IktaS/SoalShiftSISOP20_modul3_F03/blob/master/soal2/2_server%2B1.png)
 `listen_thread` kemudian akan kembali menampilkan "listening...\n",lalu "accepting...\n" ketika `listen_thread` siap menerima input.\
 `player_handler` akan menampilkan "player handler in\n" ketika pertama dibuat, lalu "try reading request\n" akan ditampilkan ketika siap menerima input. "got request!  %s\n" akan ditampilkan ketika `player_handler` menerima input dari terminal client. Isi dari %s akan menyesuaikan input dari terminal client.
 Apabila input berupa "login", maka
@@ -1262,6 +1262,7 @@ while(fscanf(temp,"%s | %s",user_buf,pass_buf) != EOF){
             }
 ``` 
 akan menampilkan semua akun yang telah tercatat di dalam akun.txt.\
+![1](https://github.com/IktaS/SoalShiftSISOP20_modul3_F03/blob/master/soal2/2_server%2Bregister.png)
 Apabila input berupa "find", pemain telah berhasi login, dan tidak sedang dalam match, maka:
 ```
 if(strcmp(buffer,"find")==0 && *(player->login) == 1 && *(player->in_match) == 0){
@@ -1323,7 +1324,9 @@ while(player->enemy == NULL){
                 sleep(1);
             }
 ```
-akan terus mengirimkan pesan "finding..." ke client hingga lawan tanding ditemukan dengan `sendResponse`. Fungsi `match` mengatur dari balik layar nilai dari player->enemy , yang menyebabkan while menjadi false.\
+akan terus mengirimkan pesan "finding..." ke client hingga lawan tanding ditemukan dengan `sendResponse`.
+![er](https://github.com/IktaS/SoalShiftSISOP20_modul3_F03/blob/master/soal2/2_server%2Bfnd1.png)
+Fungsi `match` mengatur dari balik layar nilai dari player->enemy , yang menyebabkan while menjadi false.\
 `match` akan mulai bekerja ketika terdapat setidaknya 2 orang yang mengantri, sesuai dengan
 ```
 if(serverMain->player_queue->count >= 2){
@@ -1341,6 +1344,7 @@ if(serverMain->player_queue->count >= 2){
         }
 ```
 Ketika akhirnya lawan ditemukan, "match_found" akan di kirim ke client melalui `sendResponse`
+![ra](https://github.com/IktaS/SoalShiftSISOP20_modul3_F03/blob/master/soal2/2_server%2Bfnd2.png)
 ```
 	if(strcmp(buffer,"shoot")==0 && *(player->in_match) == 1 && *(player->login) == 1 && player->enemy != NULL){
             char * damagemessage = "damage";
@@ -1538,8 +1542,6 @@ void render_menu2(scene_data * curscene){
     }
 }
 ```
-yang akan menampilkan tampilan berikut:
-[Gamber]
 Pengguna dapat menginputkan "find" atau "logout" untuk merubah case pada `main`. Input selain ke-2 kata tersebut tidak akan merubah case, sehingga menu di atas akan ditampilkan kembali.\
 "logout" akan mengaktifkan case 0 pada `main`, mengembalikan tampilan menjadi menu awal.\
 "find" akan mengaktifkan case 4 pada `main`,
@@ -1656,7 +1658,7 @@ Selama `reading_thread` menentukan permainan belum berakhir,
 akan bernilai true. Pemain dapat memberi input " " (spasi) untuk menampilkan "%d health\n" dan "hit!!\n" di layar. Ketika pemain memberi input spasi, "shoot" dikirimkan ke server dengan menggunakan `sendRequest`.\
 Ketika permainan berakhir, akan ditampilkan hasil yang berupa: "Game berakhir kamu menang\n" atau "Game berakhir kamu kalah\n" tergantung hasil yang didapat `reading_thread`.\
 "endmatch" akan dikirimkan ke server melalui `sendRequest`, dan case 3 akan kembali diaktifkan.
-[Gambar]
+![ambar](https://github.com/IktaS/SoalShiftSISOP20_modul3_F03/blob/master/soal2/2_server%2Bend.png)
 
 # Soal 3
 
