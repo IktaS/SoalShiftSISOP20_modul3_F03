@@ -11,7 +11,7 @@
 # Normal mode / main menu
 
  Berikut adalah fungsi main dari soal1_traizone:
-
+```c
     int main(int argc, char const *argv[]){
     srand(time(NULL));
     // system("/bin/stty raw");
@@ -82,13 +82,13 @@
     }
     // system("/bin/stty raw");
     }
-
-Sesuai dengan,
 ```
+Sesuai dengan,
+```c
 int iret = pthread_create(&render_thread,NULL,render_scene,(void*)curscene);
 ```
 maka yang pertamakali akan ditampilkan secara default adalah main menu sesuai fungsi
-```
+```c
 void* render_scene(void* args){
     struct timespec ts;
     int rs;
@@ -124,7 +124,7 @@ void* render_scene(void* args){
 }
 ```
 dimana `render_mainmenu(curscene);` adalah:
-```
+```c
 void render_mainmenu(pokezone_scene * curscene){
     printf("Pilih aksi :\n");
     switch (*(curscene->state_cari))
@@ -144,7 +144,7 @@ yang akan menampilkan pilihan untuk: 1) Mencari/berhenti mencari pokemon, 2) Pok
 ![any](https://github.com/IktaS/SoalShiftSISOP20_modul3_F03/blob/master/soal1/trai_Main.png)
 Di saat yang bersaman, fungsi main akan tetap berjalan dan akan merubah tampilan berdasarkan input yang dimasukkan, karena secara default fungsi `input_mainmenu(curscene, input)` berjalan bersamaan dengan fungsi `render_mainmenu(curscene)` tadi.\
 `input_mainmenu(curscene)` sendiri berisi:
-```
+```c
 void input_mainmenu(pokezone_scene * curscene, int input){
     switch (input)
     {
@@ -179,7 +179,7 @@ void input_mainmenu(pokezone_scene * curscene, int input){
 ```
 # Capture Mode & goto(scene peralihan)
 Apabila pengguna memberi input "1" pada main menu, case 1 pada `input_mainmenu` akan menjalankan fungsi `start_cari_pokemon(curscene)` yang berisi:
-```
+```c
 void start_cari_pokemon(pokezone_scene * curscene){
     pthread_t thread_nyari;
 
@@ -192,7 +192,7 @@ void start_cari_pokemon(pokezone_scene * curscene){
 }
 ```
 yang akan membuat thread baru yang berfungsi menjalankan:
-```
+```c
 void * cari_pokemon(void* args){
     pokezone_scene * passed_scene = (pokezone_scene*)args;
     while(1){
@@ -214,13 +214,13 @@ yang berfungsi mencari pokemon tiap 10 detik di belakang layar dengan cara mengg
 ![otr](https://github.com/IktaS/SoalShiftSISOP20_modul3_F03/blob/master/soal1/trai_Maincari.png)
 Apabila pada kondisi ini pengguna memberi input "1" lagi, maka pokemon akan berhenti dicari, dan tampilan akan kembali seperti semula.\
 Apabila `cari_pokemon` berhasil menemukan pokemon, maka case 5 pada `render_scene` akan aktif dan menjalankan:
-```
+```c
 case 5:
                 render_goto(curscene);
                 break;
 ```
 dimana `render_goto(curscene)` adalah:
-```
+```c
 void render_goto(pokezone_scene * curscene){
     printf("Ketemu Pokemon!\n");
     printf("1. Pergi ke capture mode\n");
@@ -228,13 +228,13 @@ void render_goto(pokezone_scene * curscene){
 }
 ```
 yang akan menampilkan pilihan berikutnya. Disaat yang bersamaan, case 5 pada `main` akan aktif di belakang layar dan menjalankan:
-```
+```c
 case 5:
             input_goto(curscene,input);
             break;
 ```
 dimana `input_goto` adalah:
-```
+```c
 void input_goto(pokezone_scene * curscene, int input){
     // int before = *(curscene->state_menu);
     switch (input)
@@ -258,13 +258,13 @@ yang berfungsi mengolah input pada menu ini:
 ![FOtO](https://github.com/IktaS/SoalShiftSISOP20_modul3_F03/blob/master/soal1/trai_goto.png)
 Apabila pengguna memberi input "2", maka tampilan akan kembali seperti semula, seperti sebelum pokemon dicari.\
 Apabila pengguna memberi input "1", maka case 1 pada `render_scene` akan aktif dan menjalankan `render_capturemode(curscene)`
-```
+```c
 case 1:
                 render_capturemode(curscene);
                 break;
 ```
 dimana `render_capturemode(curscene)` adalah:
-```
+```c
 void render_capturemode(pokezone_scene * curscene){
     if(curscene->capturedmode_pokemon != NULL)
         printf("Kamu bertemu dengan %s  --- %d\n",curscene->capturedmode_pokemon->name,curscene->capturedmode_pokemon->capture + 20 * (curscene->lullaby_state));
@@ -291,13 +291,13 @@ yang akan menampilkan tampilan
 ![MASUKIN GAMBAR](https://github.com/IktaS/SoalShiftSISOP20_modul3_F03/blob/master/soal1/trai_capture.png)
 sekaligus mengacak kemungkinan apakah pokemon akan kabur dengan `int rando`. Apabila hasil yang diberikan memenuhi parameter, maka pokemon akan kabur, dan pemain akan dikembalikan ke tampilan semua.\
 Selama pokemon masih belum kabur, case 1 pada fungsi main akan berjalan di belakang layar dan menjalankan
-```
+```c
 case 1:
             input_capturemode(curscene, input);
             break;
 ```
 dimana `input_capturemode` bertugas memproses input pada kondisi ini.
-```
+```c
 void input_capturemode(pokezone_scene * curscene, int input){
     start_capture_mode(curscene);
     switch (input)
@@ -321,7 +321,7 @@ void input_capturemode(pokezone_scene * curscene, int input){
 }
 ```
 dengan `start_capture_mode`:
-```
+```c
 void start_capture_mode(pokezone_scene * curscene){
     pthread_t pokemon_thread;
     curscene->deact_lull = 0;
@@ -331,9 +331,9 @@ void start_capture_mode(pokezone_scene * curscene){
         exit(EXIT_FAILURE);
     }
 }
-```
+```c
 yang bertugas membuat thread baru yang menjalankan:
-```
+```c
 void* calculate_escape_rate(void* args){
     pokezone_scene * curscene = (pokezone_scene *)args;
     int escaperate = curscene->capturedmode_pokemon->escape;
@@ -346,7 +346,7 @@ void* calculate_escape_rate(void* args){
 ```
 yang akan menghitung peluang pokemon kabur.\
 Pemain dapat memberi input "1" untuk mengaktifkan case 1 `input_capturemode` yang akan menjalankan:
-```
+```c
 void tangkap_action(pokezone_scene * curscene){
     if(curscene->player_stock->pokeball <= 0) {
         printf("habis");
@@ -391,7 +391,7 @@ void tangkap_action(pokezone_scene * curscene){
 }
 ```
 Fungsi tersebut akan menampilkan "habis" apabila pokeball yang pemain miliki tidak mencukupi. Apabila pemain mempunyai cukup pokeball, maka akan dijalankan perhitungan untuk menentukan apakah pokemon berhasil ditangkap atau lolos. Apabila pokemon tertangkap, maka data akan diperbaharui. Pokeball pemain akan berkurang sebanyak 1 apapun hasil yang didapat, lalu pemain akan dikembalikan ke tampilan semula. Fungsi tersebut juga bertugas membuat thread baru `calculate_ap_pokemon`:
-```
+```c
 void* calculate_ap_pokemon(void* args){
     pokedex_pokemon * pokemon = (pokedex_pokemon *)args;
     while(1){
@@ -415,13 +415,13 @@ void* calculate_ap_pokemon(void* args){
 ```
 yang berfungsi menghitung ap pokemon di belakang layar. Tiap 10 detik, ap dari semua pokemon akan berkurang sebanyak 10. Apabila ap pokemon mencapai 0, maka akan dilakukan perhitungan untuk menentukan apakah pokemon tersebut akan dihilangkan dari kepemilikan pemain, atau justru pokemon tersebut akan mendapatkan 50 ap.\
 Apabila pemain memberi input "2" pada capturemode, maka case 2 akan aktif dan menjalankan:
-```
+```c
 case 2:
         activate_lull(curscene);
         break;
 ```
 dimana `activate_lull` adalah:
-```
+```c
 void activate_lull(pokezone_scene * curscene){
     if(curscene->player_stock->lull_pow <= 0)return;
     pthread_t lull_thread;
@@ -435,7 +435,7 @@ void activate_lull(pokezone_scene * curscene){
 }
 ```
 yang akan mengecek lullaby powder milik pemain. Apabila lullaby powder milik pemain tidak mencukupi(0) maka tidak akan ada yang terjadi, namun apabila sebaliknya maka thread baru akan dibuat untuk menjalankan fungsi dibalik layar:
-```
+```c
 void *lull_powder(void* args){
     pokezone_scene * curscene = (pokezone_scene*)args;
 
@@ -470,9 +470,9 @@ Pada `render_capturemode`, pokemon tidak akan kabur
 ...
 if(rando < curscene->capturedmode_pokemon->escape && curscene->lullaby_state != 1){
 ...
-```
+```c
 Apabila pemain memberi input "3" pada capturemode, maka case 3 akan aktif dan menjalankan:
-```
+```c
 case 3:
         pthread_mutex_lock(&(curscene->state_lock));
         *(curscene->state_menu) = 0;
@@ -489,13 +489,13 @@ yang akan mematikan efek lullaby powder(jika ada), dan mengembalikan pemain ke m
 # Pokedex
 Apabila pada main menu pengguna memasukkan input "2", maka case 2 akan aktif pada `main` dan `render_scene`.\
 Pada `main`:
-```
+```c
  case 2:
             input_pokedex(curscene, input);
             break;
 ```
 di mana `input_pokedex` adalah:
-```
+```c
 void input_pokedex(pokezone_scene * curscene, int input){
     switch (input)
     {
@@ -517,13 +517,13 @@ void input_pokedex(pokezone_scene * curscene, int input){
 ```
 yang berfungsi memproses input dari pengguna pada menu pokedex.\
 Pada `render_scene`, case 2 adalah:
-```
+```c
  case 2:
                 render_pokedex(curscene);
                 break;
 ```
 di mana `render_pokedex` adalah:
-```
+```c
 void render_pokedex(pokezone_scene * curscene){
     for(int i=0; i<curscene->sizepokedex;i++){
         printf("%s - %d\n",curscene->pokedex[i].name,curscene->pokedex[i].ap);
